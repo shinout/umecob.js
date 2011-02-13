@@ -13,8 +13,8 @@
 </tr>
 <tr>
 <td>
-[% {tpl_id: "/unko", data: "/chinko"} %]
-[% {tpl_id: "/sanma", data: "/san"} %]
+[% {tpl_id: "test.tpl", data_id: "test.json"} %]
+[% {tpl_id: "test.tpl", data: {val: 12} } %]
 </td>
 [% for (var i in statements) {
 echo("<td>"+statements[i]["statement"]+"</td>")

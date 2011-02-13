@@ -1,34 +1,27 @@
 var fs = require("fs")
 var print = require("util").print
-var tpl = fs.readFileSync('sample.tpl', "utf-8")
-var json = eval( "(" + fs.readFileSync('sample.json', "utf-8") + ")")
 var Deferred = require("./jsdeferred.node.js").Deferred
 
 function umecob(op) {
   return Deferred.parallel({
     tpl: op.tpl 
-          ? function(){ return new Deferred().next(function(){ return op.tpl }) }
+          ? Deferred.call(function(){return op.tpl})
           : umecob.getTemplate(op.tpl_id),
-    data: op.data
-          ? function(){ return new Deferred().next(function(){ return op.data }) }
+    data: op.data 
+          ? Deferred.call(function(){return op.data})
           : umecob.getData(op.data_id),
   }).next( function(val) {
-    var compiled = new Compiler(val.tpl).compile()
-    return Compiler.run(compiled, val.data)
+    var compiled = new umecob.Compiler(val.tpl).compile()
+    return umecob.Compiler.run(compiled, val.data)
   })
 }
 
-umecob.getTemplate = function(tpl) {
-  var d = new Deferred()
-}
+umecob.TextBuffer = (function() {
+  var T = function() {
+    this.i = 0
+    this.arr = new Array()
+  }
 
-
-umecob.TextBuffer = function() {
-  this.i = 0
-  this.arr = new Array()
-}
-
-(function(T) {
   T.prototype.add = function(c) {
     this.arr[this.i++] = c
   }
@@ -52,21 +45,23 @@ umecob.TextBuffer = function() {
   T.prototype.put = function(i, c) {
     this.arr[i] = c
   }
-})(umecob.TextBuffer)
+
+  return T
+})()
 
 
-umecob.Compiler = function(tpl) {
-  var T= umecob.TextBuffer
-  this.tpl              = tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '') + '\0' // ヌルバイトを終端と見なすやり方にしてます
-  this.state            = "START"
-  this.codeBuffer       = new T()
-  this.strBuffer        = new T()
-  this.jsBuffer         = new T()
-  this.jsEchoBuffer     = new T()
-  this.jsIncludeBuffer  = new T()
-}
+umecob.Compiler = (function(T) {
 
-(function(C,T) {
+  var C = function(tpl) {
+    this.tpl              = tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '') + '\0' // ヌルバイトを終端と見なすやり方にしてます
+    this.state            = "START"
+    this.codeBuffer       = new T()
+    this.strBuffer        = new T()
+    this.jsBuffer         = new T()
+    this.jsEchoBuffer     = new T()
+    this.jsIncludeBuffer  = new T()
+  };
+
   C.run = function(compiled, json) {
     var buff = new T()
     var echo = function(txt) {
@@ -92,29 +87,24 @@ umecob.Compiler = function(tpl) {
     }
 
     var code = "with(json){" + compiled + "}"
-    console.log (code)
 
-    var d = eval(code)
-    return d instanceof Deferred ? d : buff.join()
+    return eval(code)
   }
 
   C.prototype.compile = function() {
     var tplArr      = this.tpl.split(""),
-        changeState = this.changeState,
+        trans = this.transition,
         state       = this.state
-        defer       = false
 
     try {
       i = 0
       while ( state ) {
         var c = tplArr[i++]
-        state = changeState[state] ? changeState[state].call(this,c) : (function(){ throw new Error("State error: Unknown state '"+ state +"' was given.")})()
+        state = trans[state] ? trans[state].call(this,c) : (function(){ throw new Error("State error: Unknown state '"+ state +"' was given.")})()
         // print(state+ "\t")
       }
 
-      if (defer) {
-        this.codeBuffer.add("Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i].tpl_id) } return echo.getText() })")
-      }
+      this.codeBuffer.add("Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i]) } return echo.getText() })")
 
       return this.codeBuffer.join("\n")
 
@@ -144,7 +134,6 @@ umecob.Compiler = function(tpl) {
   function jsIncludeToCode() {
     //  code:            echo.addDefer(umecob({tpl_id:"sample.tpl", json: "sample.json"}))
     this.codeBuffer.add('echo.addDefer(umecob(' + ( this.jsIncludeBuffer.join() ) + '))')
-    defer = true
     this.jsIncludeBuffer = new T()
   }
 
@@ -153,7 +142,7 @@ umecob.Compiler = function(tpl) {
   }
 
 
-  C.prototype.changeState = { 
+  C.prototype.transition = { 
     // 初期状態
     "START": function(c) {
       switch (c) {
@@ -465,11 +454,32 @@ umecob.Compiler = function(tpl) {
       }
     },
 
-
-
   }
 
-})(umecob.Compiler,umecob.TextBuffer)
+  return C
+})( umecob.TextBuffer)
 
+umecob.getTemplate = function(tpl_id) {
+  var d = new Deferred().next(function(tpl){
+    return tpl
+  })
+  fs.readFile(tpl_id, "utf-8", function(e, str){
+    d.call.call(d, str)
+  })
+  return d
+}
+
+umecob.getData = function(data_id) {
+  var d = new Deferred().next(function(data){
+    return data
+  })
+  fs.readFile(data_id, "utf-8", function(e, str){
+    d.call.call(d, eval("("+str+")"))
+  })
+  return d
+}
+
+var tpl = fs.readFileSync('sample.tpl', "utf-8")
+var json = eval( "(" + fs.readFileSync('sample.json', "utf-8") + ")")
 umecob({"tpl": tpl, "data": json})
-.next(function(html) { console.log(html) })
+.next(function(html) {console.log(html) })

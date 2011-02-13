@@ -59,7 +59,7 @@ var umecob = function(op) {
   var d = new Deferred()
   setTimeout( function() {
     d.call.call(d, op)
-  }, 2000)
+  }, 20)
   return d
 }
 
@@ -72,7 +72,12 @@ function run() {
   echo.addDefer( umecob({tpl_id:"sample.tpl", json: "sample.json"}) )
   echo("e")
   echo("f")
-  return Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i].tpl_id) } return echo.getText() })
+  return Deferred.parallel(echo.getDefers()).next( function(defers) {
+    for ( var i in defers ) {
+      echo.put(i,defers[i].tpl_id)
+    } 
+    return echo.getText() 
+  })
 }
 
 run().next(function(result){
