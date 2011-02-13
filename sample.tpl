@@ -1,0 +1,34 @@
+<table id="tblScene[%=sceneId%]" class="tblStatements">
+<thead>
+<caption>[%=title%]</caption>
+</thead>
+<tbody>
+<tr class="trStatementHeader">
+<th class="cellNo">No.</th>
+<th class="cellTag">項目</th>
+<th class="cellStatement">文章</th> 
+<th class="cellGround">根拠</th> 
+<th class="cellReference">参照先</th> 
+<th class="cellAction">操作</th></tr>
+</tr>
+<tr>
+<td>
+[% {tpl_id: "/unko", data: "/chinko"} %]
+[% {tpl_id: "/sanma", data: "/san"} %]
+</td>
+[% for (var i in statements) {
+echo("<td>"+statements[i]["statement"]+"</td>")
+} %]
+
+[% if (title == "シーン") { %]
+<td>[%= title%]は[%= sceneId  %]だよね</td>
+[% } %]
+</tr>
+</tbody>
+</table>
+<div id="shinout">
+\[%=sceneId %]のように書くとescapeされるんですわ
+そして
+[% echo("[% DQおっはー%]")  %]
+[% echo('[% SQおっはー%]')  %]
+</div>
