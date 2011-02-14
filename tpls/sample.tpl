@@ -13,8 +13,8 @@
 </tr>
 <tr>
 <td>
-[% {tpl_id: "test.tpl", data_id: "test.json"} %]
-[% {tpl_id: "test.tpl", data: {val: 12} } %]
+[% {tpl_id: "tpls/test.tpl", data_id: "data/test.json"} %]
+[% {tpl_id: "tpls/test.tpl", data: {val: 12} } %]
 </td>
 [% for (var i in statements) {
 echo("<td>"+statements[i]["statement"]+"</td>")
@@ -31,4 +31,5 @@ echo("<td>"+statements[i]["statement"]+"</td>")
 そして
 [% echo("[% DQおっはー%]")  %]
 [% echo('[% SQおっはー%]')  %]
+[% echo('ECHOです')  %]
 </div>
