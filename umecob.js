@@ -1,15 +1,15 @@
 var Deferred;
 Deferred = require("./jsdeferred.node.js").Deferred
+
 try {
 
 var umecob = ( function() {
-
-  
 
   // umecob関数本体
   var UC = function(op) {
     if ( !UC.binding() ) 
       throw E.UMECOB.CALL_USE
+      UC.start.fire(op) // dispatch Event:"start"
       return UC[op.sync ? "sync" : "async"](op)
   }
 
@@ -57,7 +57,7 @@ var umecob = ( function() {
 
 
   // node.js file open binding
-  UC.binding.node = (function(T) {
+  UC.binding.file = (function(T) {
     var fs = require("fs")
     return T.impl({
 
@@ -77,36 +77,69 @@ var umecob = ( function() {
     })
   })(new Trait())
 
-  // jquery ajax binding
-  UC.binding.jquery = new Trait({
-    getSync : function(id) {
-      var str
-      $.ajax({
-        url: id,
-        type: "GET",
-        async: false,
-        success: function(res) {
-          str = res;
-        }
-      })
-      return str
-    },
+  // file のエイリアスとしてnode を登録
+  UC.binding.node = UC.binding.file
 
-    getAsync : function(id) {
-      var str;
-      var d = new Deferred().next(function(str) {
-        return str
-      })
-      $.ajax({
-        url: params.url,
-        type: params.method ? params.method : 'GET',
-        success: function(res) {
+  // node.js url get binding
+  UC.binding.url = (function(T) {
+    var url  = require("url")
+    var http = require("http")
+    return T.impl({
+
+      getSync : function(id) {
+        throw BINDING.URL_SYNC
+      },
+
+      getAsync : function(id) {
+        var d = new Deferred().next(function(str) {
+          return str
+        })
+        var op = url.parse(id)
+        http.get({
+          host: op.hostname || "localhost",
+          port: op.port || 80,
+          path: ( (op.pathname.slice(0,1) == "/") ? "" : "/" ) + op.pathname + (op.search || "")
+        }, function(res){
+          console.log(res)
           d.call.call(d, res)
-        }
-      })
-      return d
-    }
-  })
+        })
+        return d
+      }
+    })
+  })(new Trait())
+
+  // jquery ajax binding
+  UC.binding.jquery = ( function() {
+    return new Trait({
+      getSync : function(id) {
+        var str
+        jQuery.ajax({
+          url: id,
+          type: "GET",
+          async: false,
+          success: function(res) {
+            str = res;
+          }
+        })
+        return str
+      },
+
+      getAsync : function(id) {
+        var str;
+        var d = new Deferred().next(function(str) {
+          return str
+        })
+        jQuery.ajax({
+          url: params.url,
+          type: params.method ? params.method : 'GET',
+          success: function(res) {
+            d.call.call(d, res)
+          }
+        })
+        return d
+      }
+    })
+  })()
 
   // client js ajax binding
   UC.binding.client = (function(T) {
@@ -148,7 +181,6 @@ var umecob = ( function() {
     if (typeof Deferred === "undefined") {
       throw E.ASYNC.DEFERRED_REQUIRED
     }
-
     return Deferred.parallel({
       tpl: op.tpl 
             ? Deferred.call(function(){return op.tpl})
@@ -156,17 +188,67 @@ var umecob = ( function() {
       data: op.data 
             ? Deferred.call(function(){return op.data})
             : UC.binding().getData.async(op.data_id),
+
     }).next( function(val) {
-      return new Compiler(val.tpl).compile().run(val.data)
+      op.tpl = val.tpl
+      op.data = val.data
+      return compile_then_render(op)
     })
   }
 
   // umecobの同期版
   UC.sync = function(op) {
-    var tpl = op.tpl || UC.binding().getTemplate.sync(op.tpl_id)
-    var data = op.data || UC.binding().getData.sync(op.data_id)
-    return new Compiler(tpl, true).compile().run(data)
+    op.sync = true
+    op.tpl = op.tpl || UC.binding().getTemplate.sync(op.tpl_id)
+    op.data = op.data || UC.binding().getData.sync(op.data_id)
+    return compile_then_render(op)
   }
+
+  // UC.syncでもUC.asyncでも共通の処理
+  function compile_then_render(op) {
+    UC.fetched.fire(op) // dispatch Event:"fetched"
+    var compiler = new Compiler(op.tpl, op.sync || false).compile()
+    op.compiled = compiler.compiled
+    UC.compiled.fire(op) // dispatch Event:"compiled"
+    op.rendered = compiler.run(op.data)
+    UC.rendered.fire(op) // dispatch Event:"rendered"
+    return op.rendered
+  }
+
+  // Events
+  function Evt(defaultName) {
+    var i = 0
+
+    // 本体
+    var Ev = function() {
+      if ( typeof arguments[0] === "function") {
+        this.funcs[defaultName + i++] = arguments[0]
+      } else if(arguments.length != 2 ) {
+        throw E.EVT.INVALID_ARGUMENTS
+      } else {
+        this.funcs[arguments[0]] = arguments[1]
+      }
+    }
+
+    Ev.funcs = {}
+    Ev.fire = function() {
+      for (var j in Ev.funcs) {
+        if (typeof Ev.funcs === "function") {
+          var args = arguments
+          var func = Ev.funcs[j]
+          setTimeout( function(){ func.apply(Ev, args)}, 0)
+        }
+      }
+    }
+
+    return Ev
+  }
+
+  UC.start    = Evt("start")
+  UC.fetched  = Evt("fetched")
+  UC.compiled = Evt("compiled")
+  UC.rendered = Evt("rendered")
+
 
   var TextBuffer = (function() {
     var T = function() {
@@ -622,7 +704,7 @@ var umecob = ( function() {
   var E = {
     BASIC : "UmeCob Error.",
     UMECOB: {
-      CALL_USE : "Before calling umecob(), you have to specify your environment with \"umecob.use(t);\" where t = 'node', 'jquery', 'client', or your customized binding." +
+      CALL_USE : "Before calling umecob(), you have to specify your environment with \"umecob.use(t);\" where t = 'file', 'url', 'jquery', 'client', or your customized binding." +
       "If you'd like to set your own binding, use "+
       "umecob.binding('someName', {getTemplate: {sync: function(id){}, async: function(id){}},getData: {sync: function(id){}, async: function(id){}}});",
     },
@@ -636,22 +718,42 @@ var umecob = ( function() {
     ASYNC: {
       DEFERRED_REQUIRED: "If you use umecob() asynchronously, you have to include \"JSDeferred\" library. Go to https://github.com/cho45/jsdeferred then download it.",
     },
+    EVT: {
+      INVALID_ARGUMENTS: "if you bind event to umecob, you should input one argument :function, or two arguments: string and function.",
+    }
+
   }
   return UC
 })()
 } catch (e) {
   console.log(e)
+  console.log(e.stack || "no stack")
 }
 
 try {
-var fs = require("fs")
-var tpl = fs.readFileSync('tpls/sample.tpl', "utf-8")
-var json = eval( "(" + fs.readFileSync('data/sample.json', "utf-8") + ")")
-umecob.use("node")({"tpl": tpl, "data": json})
-.next(function(html) {console.log(html) })
 
-console.log( umecob({"tpl": tpl, "data": json, "sync": true}) )
+function ucfile() {
+  umecob.use("file")({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json"})
+  .next(function(html) {console.log(html) })
+}
+
+function ucSync() {
+  var fs = require("fs")
+  var tpl = fs.readFileSync('tpls/sample.tpl', "utf-8")
+  var json = eval( "(" + fs.readFileSync('data/sample.json', "utf-8") + ")")
+  console.log( umecob.use("node")({tpl: tpl, data: json, "sync": true}) )
+}
+
+function ucUrl() {
+  umecob.use("url")({tpl: "tpl", data_id: "http://api.rakuten.co.jp/rws/1.12/json"})
+  .next(function(html) {console.log(html) })
+}
+
+// ucUrl()
+ucSync()
+ucfile()
 
 } catch (e) {
   console.log(e)
+  console.log(e.stack || "no stack")
 }
