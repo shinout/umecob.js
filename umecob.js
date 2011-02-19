@@ -1,9 +1,19 @@
-var Deferred;
-Deferred = require("./jsdeferred.node.js").Deferred
-
 try {
+var umecob,
+    Deferred = Deferred || null
 
-var umecob = ( function() {
+// for node.js
+if (typeof exports == "object") {
+  exports.umecob = umecob
+  Deferred = require("./jsdeferred.node.js").Deferred
+}
+
+// for client
+if (typeof require == "undefined") {
+  require = function(){}
+}
+
+umecob = ( function() {
 
   // umecob関数本体
   var UC = function(op) {
@@ -38,15 +48,31 @@ var umecob = ( function() {
   // bindingの型 new UC.binding.Trait() とするとよい
   var Trait = function(impl) {
     impl = impl || {}
-    var jsonize = function(str) { return eval("("+str+")") }
+    var jsonize = function(str) {
+      console.log("JSONIZE")
+      console.log(str)
+      try {
+        return eval("("+str+")") 
+      } catch (e) {
+        console.log("ERROR OCCUERED DURING JSONIZE")
+        console.log(e)
+      }
+    }
     this.impl = function(obj) { impl = obj; return this }
     this.getTemplate = { 
       sync: function(id) { return impl.getSync(id) },
       async: function(id) { return impl.getAsync(id) },
     }
     this.getData = {
-      sync: function(id) { return jsonize(impl.getSync(id)) },
-      async: function(id) { return impl.getAsync(id).next(function(str) { return jsonize(str) }) }
+      sync: function(id) { 
+        var data = impl.getSync(id)
+        return (typeof data == "string") ? jsonize(data) : data
+      },
+      async: function(id) {
+        return impl.getAsync(id).next(function(data) {
+          return (typeof data == "string") ? jsonize(data) : data
+        }) 
+      }
     }
     this.init = function() {
     }
@@ -100,7 +126,7 @@ var umecob = ( function() {
           port: op.port || 80,
           path: ( (op.pathname.slice(0,1) == "/") ? "" : "/" ) + op.pathname + (op.search || "")
         }, function(res){
-          console.log(res)
+          //console.log(res)
           d.call.call(d, res)
         })
         return d
@@ -118,21 +144,21 @@ var umecob = ( function() {
           type: "GET",
           async: false,
           success: function(res) {
-            str = res;
+            str = res
           }
         })
         return str
       },
 
       getAsync : function(id) {
-        var str;
-        var d = new Deferred().next(function(str) {
+        var str 
+          , d = new Deferred().next(function(str) {
           return str
         })
         jQuery.ajax({
-          url: params.url,
-          type: params.method ? params.method : 'GET',
-          success: function(res) {
+          url     : id,
+          type    : 'GET',
+          success : function(res) {
             d.call.call(d, res)
           }
         })
@@ -147,14 +173,13 @@ var umecob = ( function() {
       return typeof(ActiveXObject) !== "undefined"   
         ? new ActiveXObject("Msxml2.XMLHTTP") || new ActiveXObject("Microsoft.XMLHTTP")
         : new XMLHttpRequest()
-     ;
 	  }
 
     return T.impl({
       getSync : function(id) {
         var request = new Request()
         request.open("GET", id, false)
-        if ( request.status == 404 || request.status == 2 ||(request.status == 0 && request.responseText == '') ) return null;
+        if ( request.status == 404 || request.status == 2 ||(request.status == 0 && request.responseText == '') ) return null
         return request.responseText
       },
 
@@ -192,7 +217,15 @@ var umecob = ( function() {
     }).next( function(val) {
       op.tpl = val.tpl
       op.data = val.data
-      return compile_then_render(op)
+      UC.fetched.fire(op) // dispatch Event:"fetched"
+      var compiler = new Compiler(op.tpl, op.sync || false).compile()
+      op.compiled = compiler.compiled
+      UC.compiled.fire(op) // dispatch Event:"compiled"
+      return compiler.run(op.data).next(function(rendered) {
+        op.rendered = rendered
+        UC.rendered.fire(op) // dispatch Event:"rendered"
+        return op.rendered
+      })
     })
   }
 
@@ -201,11 +234,6 @@ var umecob = ( function() {
     op.sync = true
     op.tpl = op.tpl || UC.binding().getTemplate.sync(op.tpl_id)
     op.data = op.data || UC.binding().getData.sync(op.data_id)
-    return compile_then_render(op)
-  }
-
-  // UC.syncでもUC.asyncでも共通の処理
-  function compile_then_render(op) {
     UC.fetched.fire(op) // dispatch Event:"fetched"
     var compiler = new Compiler(op.tpl, op.sync || false).compile()
     op.compiled = compiler.compiled
@@ -252,6 +280,10 @@ var umecob = ( function() {
 
   var TextBuffer = (function() {
     var T = function() {
+      this.init()
+    }
+
+    T.prototype.init = function(i, c) {
       this.i = 0
       this.arr = new Array()
     }
@@ -280,6 +312,8 @@ var umecob = ( function() {
       this.arr[i] = c
     }
 
+    T.prototype.clear = T.prototype.init
+
     return T
   })()
 
@@ -290,17 +324,16 @@ var umecob = ( function() {
       this.compiled         = null
       this.state            = "START"
       this.codeBuffer       = new T()
-      this.strBuffer        = new T()
-      this.jsBuffer         = new T()
-      this.jsEchoBuffer     = new T()
-      this.jsIncludeBuffer  = new T()
+      this.buffer           = new T()
       this.sync            = (sync) ? true : false
-    };
+    }
 
     C.prototype.compile = function() {
       var tplArr      = this.tpl.split(""),
           trans       = this.transition,
-          state       = this.state
+          state       = this.state,
+          tmp         = this.tmpBuffer,
+          codes       = this.codeBuffer
 
       try {
         i = 0
@@ -317,7 +350,9 @@ var umecob = ( function() {
         return this
 
       } catch(e) {
+        console.log("ERR OCCURRED DURING COMPILATION")
         console.log(e)
+        console.log(e.stack || "no stack")
       }
     }
     
@@ -332,6 +367,7 @@ var umecob = ( function() {
       }
 
       echo.defers = {}
+
       echo.addDefer = function(d) {
         echo.defers[buff.getIndex()] = d
         buff.increment()
@@ -350,45 +386,56 @@ var umecob = ( function() {
       }
 
       var code = "with(json){" + compiled + "}"
-      return eval(code)
+      try {
+        return eval(code)
+      } catch(e) {
+        console.log(e)
+      }
     }
 
-    // strBufferの内容をコードに起こす
+    // Bufferの内容を文字列としてコードに起こす
     function strToCode() {
-      this.codeBuffer.add('echo("' + escapeForString( this.strBuffer.join() ) + '")')
-      this.strBuffer = new T()
+      this.codeBuffer.add('echo("' + escapeForString( this.buffer.join() ) + '")')
+      this.buffer.clear()
     }
 
-    // jsBufferの内容をコードに起こす
+    // Bufferの内容をJSとしてコードに起こす
     function jsToCode() {
-      this.codeBuffer.add( this.jsBuffer.join() )
-      this.jsBuffer = new T()
+      this.codeBuffer.add( this.buffer.join() )
+      this.buffer.clear()
     }
 
-    // jsEchoBufferの内容をコードに起こす
+    // Bufferの内容を出力JS変数としてコードに起こす
     function jsEchoToCode() {
-      this.codeBuffer.add('echo(' + ( this.jsEchoBuffer.join() ) + ')')
-      this.jsEchoBuffer = new T()
+      this.codeBuffer.add('echo(' + ( this.buffer.join() ) + ')')
+      this.buffer.clear()
     }
-    // jsIncludeBufferの内容をコードに起こす
+    // Bufferの内容をumecob()としてコードに起こす
     function jsIncludeToCode() {
       ( this.sync ) 
-        ? this.codeBuffer.add('echo(umecob.sync(' + ( this.jsIncludeBuffer.join() ) + '))')
-        : this.codeBuffer.add('echo.addDefer(umecob(' + ( this.jsIncludeBuffer.join() ) + '))')
-      this.jsIncludeBuffer = new T()
+        ? this.codeBuffer.add('echo(umecob.sync(' + ( this.buffer.join() ) + '))')
+        : this.codeBuffer.add('echo.addDefer(umecob(' + ( this.buffer.join() ) + '))')
+      this.buffer.clear()
+    }
+
+    // Bufferの内容をDeferredとしてコードに起こす
+    function jsAsyncToCode() {
+      ( this.sync ) 
+        ? this.codeBuffer.add( this.buffer.join() )
+        : this.codeBuffer.add('echo.addDefer(' + ( this.buffer.join() ) + ')')
+      this.buffer.clear()
     }
 
     function escapeForString(str) {
       return str.replace(/\\g/, '\\\\').replace(/\n/g, '\\n').replace(/"/g, '\\"')
     }
 
-
     C.prototype.transition = { 
       // 初期状態
       "START": function(c) {
         switch (c) {
           default:
-            this.strBuffer.add(c)
+            this.buffer.add(c)
             return "START"
           case '[':
             return "JS_PRE_START"
@@ -405,13 +452,13 @@ var umecob = ( function() {
         switch (c) {
           case '\\':
           case '[':
-            this.strBuffer.add(c)
+            this.buffer.add(c)
             return "START"
           default:
-            this.strBuffer.add('\\'+c)
+            this.buffer.add('\\'+c)
             return "START"
           case '\0':
-            this.strBuffer.add('\\'+c)
+            this.buffer.add('\\'+c)
             strToCode.apply(this)
             return null // 終了
         }
@@ -425,10 +472,10 @@ var umecob = ( function() {
             strToCode.apply(this)
             return "JS_WAITING_COMMAND"
           default:
-            this.strBuffer.add(c)
+            this.buffer.add(c)
             return "START"
           case '\0':
-            this.strBuffer.add('['+c)
+            this.buffer.add('['+c)
             strToCode.apply(this)
             return null // 終了
         }
@@ -442,22 +489,24 @@ var umecob = ( function() {
           case '=':
             return "JS_ECHO"
           case '{':
-            this.jsIncludeBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INCLUDE"
+          case '@':
+            return "JS_ASYNC"
 
           // the same as JS_START
           case '%':
             return "JS_PRE_END"
           case "'":
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INSIDE_SQ"
           case '"':
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INSIDE_DQ"
           case '\\':
             return "JS_ESCAPE"
           default:
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_START"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -471,15 +520,15 @@ var umecob = ( function() {
           case '%':
             return "JS_PRE_END"
           case "'":
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INSIDE_SQ"
           case '"':
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INSIDE_DQ"
           case '\\':
             return "JS_ESCAPE"
           default:
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_START"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -494,7 +543,7 @@ var umecob = ( function() {
             jsToCode.apply(this)
             return "START"
           default:
-            this.jsBuffer.add("%"+c)
+            this.buffer.add("%"+c)
             return "JS_START"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -506,10 +555,10 @@ var umecob = ( function() {
       "JS_INSIDE_SQ": function(c) {
         switch (c) {
           case "'":
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_START"
           default:
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INSIDE_SQ"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -521,10 +570,10 @@ var umecob = ( function() {
       "JS_INSIDE_DQ": function(c) {
         switch (c) {
           case '"':
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_START"
           default:
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INSIDE_DQ"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -536,10 +585,10 @@ var umecob = ( function() {
       "JS_ESCAPE": function(c) {
         switch (c) {
           case '\\':
-            this.jsBuffer.add(c)
+            this.buffer.add(c)
             return "JS_START"
           default:
-            this.jsBuffer.add('\\'+c)
+            this.buffer.add('\\'+c)
             return "JS_START"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -553,7 +602,7 @@ var umecob = ( function() {
           case '%':
             return "JS_ECHO_PRE_END"
           default:
-            this.jsEchoBuffer.add(c)
+            this.buffer.add(c)
             return "JS_ECHO"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -568,7 +617,7 @@ var umecob = ( function() {
             jsEchoToCode.apply(this)
             return "START"
           default:
-            this.jsEchoBuffer.add(c)
+            this.buffer.add(c)
             return "JS_ECHO"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -580,10 +629,10 @@ var umecob = ( function() {
       "JS_ECHO_INSIDE_SQ": function(c) {
         switch (c) {
           case "'":
-            this.jsEchoBuffer.add(c)
+            this.buffer.add(c)
             return "JS_ECHO"
           default:
-            this.jsEchoBuffer.add(c)
+            this.buffer.add(c)
             return "JS_ECHO_INSIDE_SQ"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -595,10 +644,10 @@ var umecob = ( function() {
       "JS_ECHO_INSIDE_DQ": function(c) {
         switch (c) {
           case '"':
-            this.jsEchoBuffer.add(c)
+            this.buffer.add(c)
             return "JS_ECHO"
           default:
-            this.jsEchoBuffer.add(c)
+            this.buffer.add(c)
             return "JS_ECHO_INSIDE_DQ"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -610,10 +659,10 @@ var umecob = ( function() {
       "JS_ECHO_ESCAPE": function(c) {
         switch (c) {
           case '\\':
-            this.jsEchoBuffer.add(c)
+            this.buffer.add(c)
             return "JS_ECHO"
           default:
-            this.jsEchoBuffer.add('\\'+c)
+            this.buffer.add('\\'+c)
             return "JS_ECHO"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -627,7 +676,7 @@ var umecob = ( function() {
           case '%':
             return "JS_INCLUDE_PRE_END"
           default:
-            this.jsIncludeBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INCLUDE"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -642,7 +691,7 @@ var umecob = ( function() {
             jsIncludeToCode.apply(this)
             return "START"
           default:
-            this.jsIncludeBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INCLUDE"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -654,10 +703,10 @@ var umecob = ( function() {
       "JS_INCLUDE_INSIDE_SQ": function(c) {
         switch (c) {
           case "'":
-            this.jsIncludeBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INCLUDE"
           default:
-            this.jsIncludeBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INCLUDE_INSIDE_SQ"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -669,10 +718,10 @@ var umecob = ( function() {
       "JS_INCLUDE_INSIDE_DQ": function(c) {
         switch (c) {
           case '"':
-            this.jsIncludeBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INCLUDE"
           default:
-            this.jsIncludeBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INCLUDE_INSIDE_DQ"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
@@ -684,11 +733,85 @@ var umecob = ( function() {
       "JS_INCLUDE_ESCAPE": function(c) {
         switch (c) {
           case '\\':
-            this.jsIncludeBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INCLUDE"
           default:
-            this.jsIncludeBuffer.add(c)
+            this.buffer.add(c)
             return "JS_INCLUDE"
+          case '\0':
+            throw "Syntax error: you have to close [% tag with %] tag."
+            return null
+        }
+      },
+
+      // [%@ の始まり
+      "JS_ASYNC": function(c) {
+        switch (c) {
+          case '%':
+            return "JS_ASYNC_PRE_END"
+          default:
+            this.buffer.add(c)
+            return "JS_ASYNC"
+          case '\0':
+            throw "Syntax error: you have to close [% tag with %] tag."
+            return null
+        }
+      },
+
+      // %が来て、次はASYNCが終わるかもしれない状態
+      "JS_ASYNC_PRE_END": function(c) {
+        switch (c) {
+          case ']':
+            jsAsyncToCode.apply(this)
+            return "START"
+          default:
+            this.buffer.add(c)
+            return "JS_ASYNC"
+          case '\0':
+            throw "Syntax error: you have to close [% tag with %] tag."
+            return null
+        }
+      },
+
+      // ASYNCでの' の中の状態
+      "JS_ASYNC_INSIDE_SQ": function(c) {
+        switch (c) {
+          case "'":
+            this.buffer.add(c)
+            return "JS_ASYNC"
+          default:
+            this.buffer.add(c)
+            return "JS_ASYNC_INSIDE_SQ"
+          case '\0':
+            throw "Syntax error: you have to close [% tag with %] tag."
+            return null
+        }
+      },
+
+      // ASYNCでの" の中の状態
+      "JS_ASYNC_INSIDE_DQ": function(c) {
+        switch (c) {
+          case '"':
+            this.buffer.add(c)
+            return "JS_ASYNC"
+          default:
+            this.buffer.add(c)
+            return "JS_ASYNC_INSIDE_DQ"
+          case '\0':
+            throw "Syntax error: you have to close [% tag with %] tag."
+            return null
+        }
+      },
+
+      // " の中の状態
+      "JS_ASYNC_ESCAPE": function(c) {
+        switch (c) {
+          case '\\':
+            this.buffer.add(c)
+            return "JS_ASYNC"
+          default:
+            this.buffer.add(c)
+            return "JS_ASYNC"
           case '\0':
             throw "Syntax error: you have to close [% tag with %] tag."
             return null
@@ -721,39 +844,12 @@ var umecob = ( function() {
     EVT: {
       INVALID_ARGUMENTS: "if you bind event to umecob, you should input one argument :function, or two arguments: string and function.",
     }
-
   }
   return UC
 })()
-} catch (e) {
-  console.log(e)
-  console.log(e.stack || "no stack")
-}
-
-try {
-
-function ucfile() {
-  umecob.use("file")({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json"})
-  .next(function(html) {console.log(html) })
-}
-
-function ucSync() {
-  var fs = require("fs")
-  var tpl = fs.readFileSync('tpls/sample.tpl', "utf-8")
-  var json = eval( "(" + fs.readFileSync('data/sample.json', "utf-8") + ")")
-  console.log( umecob.use("node")({tpl: tpl, data: json, "sync": true}) )
-}
-
-function ucUrl() {
-  umecob.use("url")({tpl: "tpl", data_id: "http://api.rakuten.co.jp/rws/1.12/json"})
-  .next(function(html) {console.log(html) })
-}
-
-// ucUrl()
-ucSync()
-ucfile()
 
 } catch (e) {
+  console.log("UMECOB ERR")
   console.log(e)
   console.log(e.stack || "no stack")
 }
