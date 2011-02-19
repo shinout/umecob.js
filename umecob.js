@@ -1,40 +1,25 @@
 try {
-var umecob,
-    Deferred = Deferred || null
 
 // for node.js
-if (typeof exports == "object") {
+if (typeof exports == "object") 
   Deferred = require("./jsdeferred.node.js").Deferred
-}
 
 // for client
-if (typeof require == "undefined") {
+if (typeof require == "undefined") 
   require = function(){}
-}
 
-umecob = ( function() {
 
+var umecob = ( function() {
   // umecob関数本体
   var UC = function(op) {
-    if ( !UC.binding() ) 
-      throw E.UMECOB.CALL_USE
     return UC[op.sync ? "sync" : "async"](op)
   }
 
-  var selectedBinding = false
-
-  UC.use = function(t) {
-    var b = UC.binding.impls[t] || (function(){ throw E.USE.NOTFOUND(t)})()
-    b.init ? b.init() : (function(){ throw E.USE.INIT_NOTFOUND(t)})()
-    selectedBinding = b
-    return UC
-  }
 
   // umecobの非同期版
   UC.async = function(op) {
-    if (typeof Deferred === "undefined") {
+    if (typeof Deferred === "undefined") 
       throw E.ASYNC.DEFERRED_REQUIRED
-    }
 
     return Deferred.parallel({
       tpl: op.tpl 
@@ -45,41 +30,53 @@ umecob = ( function() {
             : UC.binding().getData.async(op.data_id),
 
     }).next( function(val) {
-      op.tpl = val.tpl
-      op.data = val.data
-      var compiler = new Compiler(op.tpl, op.sync || false).compile()
-      op.compiled = compiler.compiled
-      return compiler.run(op.data).next(function(rendered) {
-        op.rendered = rendered
-        return op.rendered
-      })
+      var compiled = UC.compiler().compile(val.tpl)
+      return UC.compiler().run(compiled, val.data);
     })
   }
 
   // umecobの同期版
   UC.sync = function(op) {
     op.sync = true
-    op.tpl = op.tpl || UC.binding().getTemplate.sync(op.tpl_id)
-    op.data = op.data || UC.binding().getData.sync(op.data_id)
-    var compiler = new Compiler(op.tpl, op.sync || false).compile()
-    op.compiled = compiler.compiled
-    op.rendered = compiler.run(op.data)
-    return op.rendered
+    var tpl = op.tpl || UC.binding().getTemplate.sync(op.tpl_id)
+    var data = op.data || UC.binding().getData.sync(op.data_id)
+    var compiled = UC.compiler().compile(tpl, true)
+    return UC.compiler().run(compiled, data)
+  }
+
+  // private Preferences. umecob.binding()  or umecob.compiler()
+  var Preferences = {
+    binding  : false,
+    compiler : "standard"
+  }
+
+  UC.use = function(t) {
+    return UC.binding(t)
   }
 
   UC.binding = function() {
-    if (arguments.length == 0) 
-      return selectedBinding
+    if (arguments.length == 0) {
+      // Get Current Binding. returns binding
+      return UC.binding.impls[Preferences.binding] || (function(){ throw E.USE.NOTFOUND(Preferences.binding)})()
+    }
 
-    if (arguments.length != 2) 
-      throw E.BINDING.INVALID_ARGUMENT
+    if (arguments.length == 1) {
+      // Set Current Binding. returns umecob
+      Preferences.binding = arguments[0]
+      return UC
+    }
 
-    UC.binding.impls = UC.binding.impls || {}
-    UC.binding.impls[arguments[0]] = arguments[1]
-    return UC
+    if (arguments.length == 2)  {
+      // Register Binding. returns umecob
+      UC.binding.impls[arguments[0]] = arguments[1]
+      return UC.binding(arguments[0])
+    }
+
+    throw E.BINDING.INVALID_ARGUMENT
   }
+  UC.binding.impls = UC.binding.impls || {}
 
-  // bindingの型 new UC.binding.Interface() とするとよい
+  // bindingの型
   UC.binding.Interface = function(impl) {
     impl = impl || {}
     var jsonize = function(str) {
@@ -106,300 +103,26 @@ umecob = ( function() {
         }) 
       }
     }
-    this.init = function() {
-    }
   }
 
-  var TextBuffer = (function() {
-    var T = function() {
-      this.init()
+  UC.compiler = function() {
+    if (arguments.length == 0) {
+      return UC.compiler.impls[Preferences.compiler] || (function(){ throw E.COMPILER.NOTFOUND(Preferences.compiler)})()
     }
 
-    T.prototype.init = function(i, c) {
-      this.i = 0
-      this.arr = new Array()
+    if (arguments.length == 1) {
+      Preferences.compiler = arguments[0]
+      return UC
     }
 
-    T.prototype.add = function(c) {
-      this.arr[this.i++] = c
+    if (arguments.length == 2) {
+      UC.compiler.impls[arguments[0]] = arguments[1]
+      UC.compiler(arguments[0])
+      return UC
     }
-
-    T.prototype.push = T.prototype.add
-
-    T.prototype.pop = function() {
-      this.i--
-      return this.arr.pop()
-    }
-
-    T.prototype.join = function(sep) {
-      return this.arr.join(sep || '')
-    }
-
-    T.prototype.getIndex = function() {
-      return this.i
-    }
-
-    T.prototype.increment = function() {
-      this.i++
-    }
-
-    T.prototype.get = function(i) {
-      return this.arr[i]
-    }
-
-    T.prototype.put = function(i, c) {
-      this.arr[i] = c
-    }
-
-    T.prototype.clear = T.prototype.init
-
-    return T
-  })()
-
-  var Compiler = (function(T) {
-
-    var C = function(tpl, sync) {
-      this.tpl              = tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '') + '\0' // ヌルバイトを終端と見なすやり方にしてます
-      this.compiled         = null
-      this.state            = "START"
-      this.codeBuffer       = new T()
-      this.buffer           = new T()
-      this.sync            = (sync) ? true : false
-    }
-
-    C.prototype.compile = function() {
-      var tplArr      = this.tpl.split(""),
-          trans       = this.transitions,
-          state       = this.state,
-          tmp         = this.tmpBuffer,
-          codes       = this.codeBuffer
-
-      try {
-        i = 0
-        while ( state ) {
-          var c = tplArr[i++]
-          var oldstate = state
-          state = trans[state] ? trans[state].call(this,c) : (function(){ throw "State error: Unknown state '"+ state +"' was given."})()
-          //console.log(oldstate + "=>" + c + "で" +state)
-        }
-
-        (this.sync) 
-          ? this.codeBuffer.add("echo.getText()")
-          : this.codeBuffer.add("Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i]) } return echo.getText() })")
-
-        this.compiled = this.codeBuffer.join("\n")
-        return this
-
-      } catch(e) {
-        console.log("ERR OCCURRED DURING COMPILATION")
-        console.log(e)
-        console.log(e.stack || "no stack")
-      }
-    }
-    
-    C.prototype.run = function(json) {
-      if ( compiled === null ) {
-        throw "please run after compile()"
-      }
-      var compiled = this.compiled
-      var buff = new T()
-      var echo = function(txt) {
-        buff.add(txt)
-      }
-
-      echo.defers = {}
-
-      echo.addDefer = function(d) {
-        echo.defers[buff.getIndex()] = d
-        buff.increment()
-      }
-
-      echo.put = function(i, v) {
-        buff.put(i, v)
-      }
-
-      echo.getDefers = function() {
-        return echo.defers
-      }
-
-      echo.getText = function() {
-        return buff.join()
-      }
-
-      var code = "with(json){" + compiled + "}"
-      try {
-        return eval(code)
-      } catch(e) {
-        console.log(e)
-      }
-    }
-
-    var trans = {}
-    C.prototype.transitions = trans 
-    trans.stack = new T()
-
-    // 初期状態
-    trans["START"] = function(c) {
-      switch (c) {
-        default:
-          this.buffer.add(c)
-          return "START"
-        case '[':
-          return "JS_PRE_START"
-        case '\\':
-          this.transitions.stack.push("START")
-          return "ESCAPE"
-        case '\0':
-          strToCode.apply(this)
-          return null // 終了
-      }
-    }
-
-    // [ が出た状態
-    trans["JS_PRE_START"] = function(c) {
-      switch (c) {
-        case '%':
-          // strBufferの内容を吐き出す (thisはnew Compiler)
-          strToCode.apply(this)
-          return "JS_WAITING_COMMAND"
-        default:
-          this.buffer.add('[')
-          return this.transitions["START"].call(this, c)
-      }
-    }
-
-    function strToCode() {
-      this.codeBuffer.add('echo("' + this.buffer.join().replace(/\\g/, '\\\\').replace(/\n/g, '\\n').replace(/"/g, '\\"')  + '")')
-      this.buffer.clear()
-    }
-
-    function insideQuotation(state, type) {
-      return function(c) {
-        switch (c) {
-          case type:
-            this.buffer.add(c)
-            return this.transitions.stack.pop()
-          default:
-            this.buffer.add(c)
-            return state
-          case '\0':
-            throw "Syntax error: you have to close quotation."
-            return null
-        }
-      }
-    }
-
-    // ' の中の状態
-    trans["INSIDE_SQ"] = insideQuotation("INSIDE_SQ", "'")
-    // " の中の状態
-    trans["INSIDE_DQ"] = insideQuotation("INSIDE_DQ", '"')
-    // \ の次
-    trans["ESCAPE"] = function(c) {
-      switch (c) {
-        case '\\':
-        case '[':
-          this.buffer.add(c)
-          return this.transitions.stack.pop()
-        default:
-          this.buffer.add('\\'+c)
-          return this.transitions.stack.pop()
-      }
-    }
-
-    // [%
-    trans["JS_WAITING_COMMAND"] = function(c) {
-      switch (c) {
-        case ' ':
-          return "JS_WAITING_COMMAND"
-        case '=':
-          return "JS_ECHO"
-        case '{':
-          this.buffer.add(c)
-          return "JS_INCLUDE"
-        case '@':
-          return "JS_ASYNC"
-
-        // the same as JS_START
-        default:
-          return this.transitions["JS_START"].call(this, c)
-      }
-    }
-
-    function jsStartTemplate(state,preEndState) {
-      return function(c) {
-        switch (c) {
-          case '%':
-            return preEndState
-          case "'":
-            this.buffer.add(c)
-            this.transitions.stack.push(state)
-            return "INSIDE_SQ"
-          case '"':
-            this.buffer.add(c)
-            this.transitions.stack.push(state)
-            return "INSIDE_DQ"
-          case '\\':
-            this.transitions.stack.push(state)
-            return "ESCAPE"
-          default:
-            this.buffer.add(c)
-            return state
-          case '\0':
-            throw "Syntax error: you have to close [% tag with %] tag."
-            return null
-        }
-      }
-    }
-
-    function jsPreEndTemplate(mainState, fn) {
-      return function(c) {
-        switch (c) {
-          case ']':
-            fn.apply(this)
-            return "START"
-          default:
-            this.buffer.add("%"+c)
-            return mainState
-          case '\0':
-            return this.transitions[mainState].call(this, c)
-        }
-      }
-    }
-
-    // [%
-    trans["JS_START"] = jsStartTemplate("JS_START", "JS_PRE_END")
-    trans["JS_PRE_END"] = jsPreEndTemplate("JS_START", function() {
-      this.codeBuffer.add( this.buffer.join() )
-      this.buffer.clear()
-    })
-
-    // [%=
-    trans["JS_ECHO"] = jsStartTemplate("JS_ECHO", "JS_ECHO_PRE_END")
-    trans["JS_ECHO_PRE_END"] = jsPreEndTemplate("JS_ECHO", function() {
-      this.codeBuffer.add('echo(' + ( this.buffer.join() ) + ')')
-      this.buffer.clear()
-    })
-
-    // [%{ 
-    trans["JS_INCLUDE"] = jsStartTemplate("JS_INCLUDE", "JS_INCLUDE_PRE_END")
-    trans["JS_INCLUDE_PRE_END"] = jsPreEndTemplate("JS_INCLUDE", function() {
-      ( this.sync ) 
-        ? this.codeBuffer.add('echo(umecob.sync(' + ( this.buffer.join() ) + '))')
-        : this.codeBuffer.add('echo.addDefer(umecob(' + ( this.buffer.join() ) + '))')
-      this.buffer.clear()
-    })
-
-    // [%@
-    trans["JS_ASYNC"] = jsStartTemplate("JS_ASYNC", "JS_ASYNC_PRE_END")
-    trans["JS_ASYNC_PRE_END"] = jsPreEndTemplate("JS_ASYNC", function() {
-      ( this.sync ) 
-        ? this.codeBuffer.add( this.buffer.join() )
-        : this.codeBuffer.add('echo.addDefer(' + ( this.buffer.join() ) + ')')
-      this.buffer.clear()
-    })
-
-    return C
-  })(TextBuffer)
+    throw E.COMPILER.INVALID_ARGUMENT
+  }
+  UC.compiler.impls = UC.compiler.impls || {}
 
   /** ERRORS **/
   var E = {
@@ -410,8 +133,10 @@ umecob = ( function() {
       "umecob.binding('someName', {getTemplate: {sync: function(id){}, async: function(id){}},getData: {sync: function(id){}, async: function(id){}}});",
     },
     USE: {
-      NOTFOUND: function(t) { return "binding '"+ t +"' not found."},
-      INIT_NOTFOUND: function(t) { return "binding '"+ t +"' doesn't have init() method."},
+      NOTFOUND: function(t) { return "binding '"+ t +"' not found."}
+    },
+    COMPILER: {
+      NOTFOUND: function(t) { return "compiler '"+ t +"' not found."}
     },
     BINDING: {
       INVALID_ARGUMENT: "invalid argument. you must input 2 arguments, first argument is the name of your binding, and second is the setting of the binding.",
@@ -468,7 +193,6 @@ umecob.binding("url", (function(T) {
         port: op.port || 80,
         path: ( (op.pathname.slice(0,1) == "/") ? "" : "/" ) + op.pathname + (op.search || "")
       }, function(res){
-        //console.log(res)
         d.call.call(d, res)
       })
       return d
@@ -540,6 +264,247 @@ umecob.binding("client", (function(T) {
     }
   })
 })(new umecob.binding.Interface()) )
+
+// Standard Compiler
+umecob.compiler("standard", (function() {
+  var C = {}
+  C.compile = function(tpl, sync) { try {
+    var tplArr = tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '') + '\0'.split(""), // ヌルバイトが終端
+        i      = 0,
+        state  = {
+          name       : "START", 
+          buffer     : new T(), 
+          stack      : new T(),
+          codeBuffer : new T() }
+    while ( state.name ) 
+      state.name = trans[state.name] ? trans[state.name].call(state, tplArr[i++]) : (function(){ throw "State error: Unknown state '"+ state.name +"' was given."})()
+
+    sync
+      ? state.codeBuffer.add("echo.getText()")
+      : state.codeBuffer.add("Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i]) } return echo.getText() })")
+
+    return state.codeBuffer.join("\n")
+
+    } catch(e) {
+      console.log("ERR OCCURRED DURING COMPILATION")
+      console.log(e)
+      console.log(e.stack || "no stack")
+    }
+  }
+
+  C.run = function(compiled, json) {
+    var buff = new T()
+    var echo = function(txt) {
+      buff.add(txt)
+    }
+
+    echo.defers = {}
+
+    echo.addDefer = function(d) {
+      echo.defers[buff.getIndex()] = d
+      buff.increment()
+    }
+
+    echo.put = function(i, v) {
+      buff.put(i, v)
+    }
+
+    echo.getDefers = function() {
+      return echo.defers
+    }
+
+    echo.getText = function() {
+      return buff.join()
+    }
+
+    var code = "with(json){" + compiled + "}"
+    try {
+      return eval(code)
+    } catch(e) {
+      console.log(e)
+    }
+  }
+
+  // T: buffer
+  var T = function() { this.init() }
+    T.prototype.init = function(i, c) { this.i = 0; this.arr = new Array() }
+    T.prototype.add = function(c) { this.arr[this.i++] = c }
+    T.prototype.push = T.prototype.add
+    T.prototype.pop = function() { this.i--; return this.arr.pop() }
+    T.prototype.join = function(sep) { return this.arr.join(sep || '') }
+    T.prototype.getIndex = function() { return this.i }
+    T.prototype.increment = function() { this.i++ }
+    T.prototype.get = function(i) { return this.arr[i] }
+    T.prototype.put = function(i, c) { this.arr[i] = c }
+    T.prototype.clear = T.prototype.init
+
+  // transition functions. These functions are called by fn.call(state), so "this" always means state object.
+  var trans = {}
+
+  // 初期状態
+  trans["START"] = function(c) {
+    switch (c) {
+      default:
+        this.buffer.add(c)
+        return "START"
+      case '[':
+        return "JS_PRE_START"
+      case '\\':
+        this.stack.push("START")
+        return "ESCAPE"
+      case '\0':
+        strToCode.call(this)
+        return null // 終了
+    }
+  }
+
+  // [ が出た状態
+  trans["JS_PRE_START"] = function(c) {
+    switch (c) {
+      case '%':
+        // strBufferの内容を吐き出す (thisはnew Compiler)
+        strToCode.call(this)
+        return "JS_WAITING_COMMAND"
+      default:
+        this.buffer.add('[')
+        return trans["START"].call(this, c)
+    }
+  }
+
+  function strToCode() {
+    this.codeBuffer.add('echo("' + this.buffer.join().replace(/\\g/, '\\\\').replace(/\n/g, '\\n').replace(/"/g, '\\"')  + '")')
+    this.buffer.clear()
+  }
+
+  function insideQuotation(stateName, type) {
+    return function(c) {
+      switch (c) {
+        case type:
+          this.buffer.add(c)
+          return this.stack.pop()
+        default:
+          this.buffer.add(c)
+          return stateName
+        case '\0':
+          throw "Syntax error: you have to close quotation."
+          return null
+      }
+    }
+  }
+
+  // ' の中の状態
+  trans["INSIDE_SQ"] = insideQuotation("INSIDE_SQ", "'")
+  // " の中の状態
+  trans["INSIDE_DQ"] = insideQuotation("INSIDE_DQ", '"')
+  // \ の次
+  trans["ESCAPE"] = function(c) {
+    switch (c) {
+      case '\\':
+      case '[':
+        this.buffer.add(c)
+        return this.stack.pop()
+      default:
+        this.buffer.add('\\'+c)
+        return this.stack.pop()
+    }
+  }
+
+  // [%
+  trans["JS_WAITING_COMMAND"] = function(c) {
+    switch (c) {
+      case ' ':
+        return "JS_WAITING_COMMAND"
+      case '=':
+        return "JS_ECHO"
+      case '{':
+        this.buffer.add(c)
+        return "JS_INCLUDE"
+      case '@':
+        return "JS_ASYNC"
+
+      // the same as JS_START
+      default:
+        return trans["JS_START"].call(this, c)
+    }
+  }
+
+  function jsStartTemplate(stateName, preEndStateName) {
+    return function(c) {
+      switch (c) {
+        case '%':
+          return preEndStateName
+        case "'":
+          this.buffer.add(c)
+          this.stack.push(stateName)
+          return "INSIDE_SQ"
+        case '"':
+          this.buffer.add(c)
+          this.stack.push(stateName)
+          return "INSIDE_DQ"
+        case '\\':
+          this.stack.push(stateName)
+          return "ESCAPE"
+        default:
+          this.buffer.add(c)
+          return stateName
+        case '\0':
+          throw "Syntax error: you have to close [% tag with %] tag."
+          return null
+      }
+    }
+  }
+
+  function jsPreEndTemplate(mainStateName, fn) {
+    return function(c) {
+      switch (c) {
+        case ']':
+          fn.apply(this)
+          return "START"
+        default:
+          this.buffer.add("%"+c)
+          return mainState
+        case '\0':
+          return trans[mainStateName].call(this, c)
+      }
+    }
+  }
+
+  // [%
+  trans["JS_START"] = jsStartTemplate("JS_START", "JS_PRE_END")
+  trans["JS_PRE_END"] = jsPreEndTemplate("JS_START", function() {
+    this.codeBuffer.add( this.buffer.join() )
+    this.buffer.clear()
+  })
+
+  // [%=
+  trans["JS_ECHO"] = jsStartTemplate("JS_ECHO", "JS_ECHO_PRE_END")
+  trans["JS_ECHO_PRE_END"] = jsPreEndTemplate("JS_ECHO", function() {
+    this.codeBuffer.add('echo(' + ( this.buffer.join() ) + ')')
+    this.buffer.clear()
+  })
+
+  // [%{ 
+  trans["JS_INCLUDE"] = jsStartTemplate("JS_INCLUDE", "JS_INCLUDE_PRE_END")
+  trans["JS_INCLUDE_PRE_END"] = jsPreEndTemplate("JS_INCLUDE", function() {
+    ( this.sync ) 
+      ? this.codeBuffer.add('echo(umecob.sync(' + ( this.buffer.join() ) + '))')
+      : this.codeBuffer.add('echo.addDefer(umecob(' + ( this.buffer.join() ) + '))')
+    this.buffer.clear()
+  })
+
+  // [%@
+  trans["JS_ASYNC"] = jsStartTemplate("JS_ASYNC", "JS_ASYNC_PRE_END")
+  trans["JS_ASYNC_PRE_END"] = jsPreEndTemplate("JS_ASYNC", function() {
+    ( this.sync ) 
+      ? this.codeBuffer.add( this.buffer.join() )
+      : this.codeBuffer.add('echo.addDefer(' + ( this.buffer.join() ) + ')')
+    this.buffer.clear()
+  })
+
+  return C
+})())
+
+
 
 
 
