@@ -399,45 +399,13 @@ umecob = ( function() {
       }
     }
 
-    // Bufferの内容を文字列としてコードに起こす
     function strToCode() {
-      this.codeBuffer.add('echo("' + escapeForString( this.buffer.join() ) + '")')
+      this.codeBuffer.add('echo("' + this.buffer.join().replace(/\\g/, '\\\\').replace(/\n/g, '\\n').replace(/"/g, '\\"')  + '")')
       this.buffer.clear()
     }
 
-    // Bufferの内容をJSとしてコードに起こす
-    function jsToCode() {
-      this.codeBuffer.add( this.buffer.join() )
-      this.buffer.clear()
-    }
-
-    // Bufferの内容を出力JS変数としてコードに起こす
-    function jsEchoToCode() {
-      this.codeBuffer.add('echo(' + ( this.buffer.join() ) + ')')
-      this.buffer.clear()
-    }
-    // Bufferの内容をumecob()としてコードに起こす
-    function jsIncludeToCode() {
-      ( this.sync ) 
-        ? this.codeBuffer.add('echo(umecob.sync(' + ( this.buffer.join() ) + '))')
-        : this.codeBuffer.add('echo.addDefer(umecob(' + ( this.buffer.join() ) + '))')
-      this.buffer.clear()
-    }
-
-    // Bufferの内容をDeferredとしてコードに起こす
-    function jsAsyncToCode() {
-      ( this.sync ) 
-        ? this.codeBuffer.add( this.buffer.join() )
-        : this.codeBuffer.add('echo.addDefer(' + ( this.buffer.join() ) + ')')
-      this.buffer.clear()
-    }
-
-    function escapeForString(str) {
-      return str.replace(/\\g/, '\\\\').replace(/\n/g, '\\n').replace(/"/g, '\\"')
-    }
     var trans = {}
     C.prototype.transitions = trans 
-
     trans.stack = new T()
 
     // 初期状態
@@ -457,50 +425,7 @@ umecob = ( function() {
       }
     }
 
-    trans["ESCAPE"] = function(c) {
-      switch (c) {
-        case '\\':
-        case '[':
-          this.buffer.add(c)
-          return this.transitions.stack.pop()
-        default:
-          this.buffer.add('\\'+c)
-          return this.transitions.stack.pop()
-      }
-    }
-
-      // ' の中の状態
-    trans["INSIDE_SQ"] = function(c) {
-      switch (c) {
-        case "'":
-          this.buffer.add(c)
-          console.log(this.transitions.stack)
-          return this.transitions.stack.pop()
-        default:
-          this.buffer.add(c)
-          return "INSIDE_SQ"
-        case '\0':
-          throw "Syntax error: you have to close single quotation."
-          return null
-      }
-    }
-
-      // " の中の状態
-    trans["INSIDE_DQ"] = function(c) {
-      switch (c) {
-        case '"':
-          this.buffer.add(c)
-          return this.transitions.stack.pop()
-        default:
-          this.buffer.add(c)
-          return "INSIDE_DQ"
-        case '\0':
-          throw "Syntax error: you have to close double quotation."
-          return null
-      }
-    },
-
-      // [ が出た状態
+    // [ が出た状態
     trans["JS_PRE_START"] = function(c) {
       switch (c) {
         case '%':
@@ -510,6 +435,38 @@ umecob = ( function() {
         default:
           this.buffer.add('[')
           return this.transitions["START"].call(this, c)
+      }
+    }
+
+    function insideQuotation(state, type) {
+      return function(c) {
+        switch (c) {
+          case type:
+            this.buffer.add(c)
+            console.log(this.transitions.stack)
+            return this.transitions.stack.pop()
+          default:
+            this.buffer.add(c)
+            return state
+          case '\0':
+            throw "Syntax error: you have to close quotation."
+            return null
+        }
+      }
+    }
+
+    // ' の中の状態
+    trans["INSIDE_SQ"] = insideQuotation("INSIDE_SQ", "'")
+    trans["INSIDE_DQ"] = insideQuotation("INSIDE_DQ", '"')
+    trans["ESCAPE"] = function(c) {
+      switch (c) {
+        case '\\':
+        case '[':
+          this.buffer.add(c)
+          return this.transitions.stack.pop()
+        default:
+          this.buffer.add('\\'+c)
+          return this.transitions.stack.pop()
       }
     }
 
@@ -532,151 +489,78 @@ umecob = ( function() {
       }
     }
 
-    // PARSING JS状態
-    trans["JS_START"] = function(c) {
-      switch (c) {
-        case '%':
-          return "JS_PRE_END"
-        case "'":
-          this.buffer.add(c)
-          this.transitions.stack.push("JS_START")
-          return "INSIDE_SQ"
-        case '"':
-          this.buffer.add(c)
-          this.transitions.stack.push("JS_START")
-          return "INSIDE_DQ"
-        case '\\':
-          this.transitions.stack.push("JS_START")
-          return "ESCAPE"
-        default:
-          this.buffer.add(c)
-          return "JS_START"
-        case '\0':
-          throw "Syntax error: you have to close [% tag with %] tag."
-          return null
+    function jsStartTemplate(state,preEndState) {
+      return function(c) {
+        switch (c) {
+          case '%':
+            return preEndState
+          case "'":
+            this.buffer.add(c)
+            this.transitions.stack.push(state)
+            return "INSIDE_SQ"
+          case '"':
+            this.buffer.add(c)
+            this.transitions.stack.push(state)
+            return "INSIDE_DQ"
+          case '\\':
+            this.transitions.stack.push(state)
+            return "ESCAPE"
+          default:
+            this.buffer.add(c)
+            return state
+          case '\0':
+            throw "Syntax error: you have to close [% tag with %] tag."
+            return null
+        }
       }
     }
 
-    // %が来て、次は終わるかもしれない状態
-    trans["JS_PRE_END"] = function(c) {
-      switch (c) {
-        case ']':
-          jsToCode.apply(this)
-          return "START"
-        default:
-          this.buffer.add("%"+c)
-          return "JS_START"
-        case '\0':
-          return this.transitions["JS_START"].call(this, c)
+    function jsPreEndTemplate(mainState, fn) {
+      return function(c) {
+        switch (c) {
+          case ']':
+            fn.apply(this)
+            return "START"
+          default:
+            this.buffer.add("%"+c)
+            return mainState
+          case '\0':
+            return this.transitions[mainState].call(this, c)
+        }
       }
     }
 
-    // [%= の中の状態
-    trans["JS_ECHO"] = function(c) {
-      switch (c) {
-        case '%':
-          return "JS_ECHO_PRE_END"
-        case "'":
-          this.buffer.add(c)
-          this.transitions.stack.push("JS_ECHO")
-          return "INSIDE_SQ"
-        case '"':
-          this.buffer.add(c)
-          this.transitions.stack.push("JS_ECHO")
-          return "INSIDE_DQ"
-        case '\\':
-          this.transitions.stack.push("JS_ECHO")
-          return "ESCAPE"
-        default:
-          this.buffer.add(c)
-          return "JS_ECHO"
-        case '\0':
-          return this.transitions["JS_START"].call(this, c)
-      }
-    }
+    // [%
+    trans["JS_START"] = jsStartTemplate("JS_START", "JS_PRE_END")
+    trans["JS_PRE_END"] = jsPreEndTemplate("JS_START", function() {
+      this.codeBuffer.add( this.buffer.join() )
+      this.buffer.clear()
+    })
 
-    // %が来て、次はECHOが終わるかもしれない状態
-    trans["JS_ECHO_PRE_END"] = function(c) {
-      switch (c) {
-        case ']':
-          jsEchoToCode.apply(this)
-          return "START"
-        default:
-          return this.transitions["JS_ECHO"].call(this, "%"+c)
-      }
-    }
+    // [%=
+    trans["JS_ECHO"] = jsStartTemplate("JS_ECHO", "JS_ECHO_PRE_END")
+    trans["JS_ECHO_PRE_END"] = jsPreEndTemplate("JS_ECHO", function() {
+      this.codeBuffer.add('echo(' + ( this.buffer.join() ) + ')')
+      this.buffer.clear()
+    })
 
-    // [%{ の始まり
-    trans["JS_INCLUDE"] = function(c) {
-      switch (c) {
-        case '%':
-          return "JS_INCLUDE_PRE_END"
-        case "'":
-          this.buffer.add(c)
-          console.log("PUSW")
-          this.transitions.stack.push("JS_INCLUDE")
-          return "INSIDE_SQ"
-        case '"':
-          this.buffer.add(c)
-          this.transitions.stack.push("JS_INCLUDE")
-          return "INSIDE_DQ"
-        case '\\':
-          this.transitions.stack.push("JS_INCLUDE")
-          return "ESCAPE"
-        default:
-          this.buffer.add(c)
-          return "JS_INCLUDE"
-        case '\0':
-          return this.transitions["JS_START"].call(this, c)
-      }
-    }
+    // [%{ 
+    trans["JS_INCLUDE"] = jsStartTemplate("JS_INCLUDE", "JS_INCLUDE_PRE_END")
+    trans["JS_INCLUDE_PRE_END"] = jsPreEndTemplate("JS_INCLUDE", function() {
+      ( this.sync ) 
+        ? this.codeBuffer.add('echo(umecob.sync(' + ( this.buffer.join() ) + '))')
+        : this.codeBuffer.add('echo.addDefer(umecob(' + ( this.buffer.join() ) + '))')
+      this.buffer.clear()
+    })
 
-    // %が来て、次はINCLUDEが終わるかもしれない状態
-    trans["JS_INCLUDE_PRE_END"] = function(c) {
-      switch (c) {
-        case ']':
-          jsIncludeToCode.apply(this)
-          return "START"
-        default:
-          return this.transitions["JS_INCLUDE"].call(this, "%"+c)
-      }
-    }
-
-    // [%@ の始まり
-    trans["JS_ASYNC"] = function(c) {
-      switch (c) {
-        case '%':
-          return "JS_ASYNC_PRE_END"
-        case "'":
-          this.buffer.add(c)
-          this.transitions.stack.push("JS_ASYNC")
-          return "INSIDE_SQ"
-        case '"':
-          this.buffer.add(c)
-          this.transitions.stack.push("JS_ASYNC")
-          return "INSIDE_DQ"
-        case '\\':
-          this.transitions.stack.push("JS_ASYNC")
-          return "ESCAPE"
-        default:
-          this.buffer.add(c)
-          return "JS_ASYNC"
-        case '\0':
-          return this.transitions["JS_START"].call(this,c) // throw an error
-      }
-    }
-
-    // %が来て、次はASYNCが終わるかもしれない状態
-    trans["JS_ASYNC_PRE_END"] = function(c) {
-      switch (c) {
-        case ']':
-          jsAsyncToCode.apply(this)
-          return "START"
-        default:
-          return this.transitions["JS_ASYNC"].call(this, "%"+c)
-      }
-    }
-
+    // [%@
+    trans["JS_ASYNC"] = jsStartTemplate("JS_ASYNC", "JS_ASYNC_PRE_END")
+    trans["JS_ASYNC_PRE_END"] = jsPreEndTemplate("JS_ASYNC", function() {
+      ( this.sync ) 
+        ? this.codeBuffer.add( this.buffer.join() )
+        : this.codeBuffer.add('echo.addDefer(' + ( this.buffer.join() ) + ')')
+      this.buffer.clear()
+    })
 
     return C
   })(TextBuffer)
