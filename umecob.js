@@ -18,8 +18,7 @@ umecob = ( function() {
   var UC = function(op) {
     if ( !UC.binding() ) 
       throw E.UMECOB.CALL_USE
-      UC.start.fire(op) // dispatch Event:"start"
-      return UC[op.sync ? "sync" : "async"](op)
+    return UC[op.sync ? "sync" : "async"](op)
   }
 
   var selectedBinding = false
@@ -36,6 +35,7 @@ umecob = ( function() {
     if (typeof Deferred === "undefined") {
       throw E.ASYNC.DEFERRED_REQUIRED
     }
+
     return Deferred.parallel({
       tpl: op.tpl 
             ? Deferred.call(function(){return op.tpl})
@@ -47,13 +47,10 @@ umecob = ( function() {
     }).next( function(val) {
       op.tpl = val.tpl
       op.data = val.data
-      UC.fetched.fire(op) // dispatch Event:"fetched"
       var compiler = new Compiler(op.tpl, op.sync || false).compile()
       op.compiled = compiler.compiled
-      UC.compiled.fire(op) // dispatch Event:"compiled"
       return compiler.run(op.data).next(function(rendered) {
         op.rendered = rendered
-        UC.rendered.fire(op) // dispatch Event:"rendered"
         return op.rendered
       })
     })
@@ -64,12 +61,9 @@ umecob = ( function() {
     op.sync = true
     op.tpl = op.tpl || UC.binding().getTemplate.sync(op.tpl_id)
     op.data = op.data || UC.binding().getData.sync(op.data_id)
-    UC.fetched.fire(op) // dispatch Event:"fetched"
     var compiler = new Compiler(op.tpl, op.sync || false).compile()
     op.compiled = compiler.compiled
-    UC.compiled.fire(op) // dispatch Event:"compiled"
     op.rendered = compiler.run(op.data)
-    UC.rendered.fire(op) // dispatch Event:"rendered"
     return op.rendered
   }
 
@@ -79,6 +73,7 @@ umecob = ( function() {
 
     if (arguments.length != 2) 
       throw E.BINDING.INVALID_ARGUMENT
+
     UC.binding.impls = UC.binding.impls || {}
     UC.binding.impls[arguments[0]] = arguments[1]
     return UC
@@ -114,42 +109,6 @@ umecob = ( function() {
     this.init = function() {
     }
   }
-
-
-  // Events
-  function Evt(defaultName) {
-    var i = 0
-
-    // 本体
-    var Ev = function() {
-      if ( typeof arguments[0] === "function") {
-        this.funcs[defaultName + i++] = arguments[0]
-      } else if(arguments.length != 2 ) {
-        throw E.EVT.INVALID_ARGUMENTS
-      } else {
-        this.funcs[arguments[0]] = arguments[1]
-      }
-    }
-
-    Ev.funcs = {}
-    Ev.fire = function() {
-      for (var j in Ev.funcs) {
-        if (typeof Ev.funcs === "function") {
-          var args = arguments
-          var func = Ev.funcs[j]
-          setTimeout( function(){ func.apply(Ev, args)}, 0)
-        }
-      }
-    }
-
-    return Ev
-  }
-
-  UC.start    = Evt("start")
-  UC.fetched  = Evt("fetched")
-  UC.compiled = Evt("compiled")
-  UC.rendered = Evt("rendered")
-
 
   var TextBuffer = (function() {
     var T = function() {
