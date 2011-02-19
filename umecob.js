@@ -46,7 +46,7 @@ var umecob = ( function() {
 
   // private Preferences. umecob.binding()  or umecob.compiler()
   var Preferences = {
-    binding  : false,
+    binding  : "default",
     compiler : "standard"
   }
 
@@ -78,7 +78,7 @@ var umecob = ( function() {
 
   // bindingの型
   UC.binding.Interface = function(impl) {
-    impl = impl || {}
+    impl = impl || { getSync: function(){ throw "NOIMPL"}, getAsync: function() { this.getSync() }}
     var jsonize = function(str) {
       try {
         return eval("("+str+")") 
@@ -104,6 +104,7 @@ var umecob = ( function() {
       }
     }
   }
+  UC.binding("default", new UC.binding.Interface())
 
   UC.compiler = function() {
     if (arguments.length == 0) {
@@ -505,9 +506,6 @@ umecob.compiler("standard", (function() {
 })())
 
 
-
-
-
 } catch (e) {
   console.log("UMECOB ERR")
   console.log(e)
@@ -518,4 +516,3 @@ umecob.compiler("standard", (function() {
 if (typeof exports == "object") {
   exports.umecob = umecob
 }
-

@@ -15,6 +15,16 @@ function ucSync() {
   console.log( umecob.use("node")({tpl: tpl, data: json, "sync": true}) )
 }
 
+function ucDefault() {
+  umecob.use("default")({tpl: "[%=url%]とかどうなんでしょう。", data: {url: "http://api.rakuten.co.jp/rws/1.12/json"}})
+  .next(function(html) {console.log(html) })
+}
+
+function ucDefaultId() {
+  umecob.use("default")({tpl_id: "hogehoge", data_id: "okok"})
+  .next(function(html) {console.log(html) })
+}
+
 function ucUrl() {
   umecob.use("url")({tpl: "tpl", data_id: "http://api.rakuten.co.jp/rws/1.12/json"})
   .next(function(html) {console.log(html) })
