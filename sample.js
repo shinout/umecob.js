@@ -2,7 +2,6 @@ var umecob = require("./umecob.js").umecob
 
 // umecob
 try {
-  console.log(umecob)
 
 function ucfile() {
   umecob.use("file")({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json"})
@@ -22,12 +21,7 @@ function ucUrl() {
 }
 
 // ucUrl()
-
-// cache
-var cache = {}
-umecob.compiled(function(op){
-  cache[op.tpl_id || op.tpl] = opl
-})
+ucfile()
 
 } catch (e) {
   console.log(e)
