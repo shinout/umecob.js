@@ -25,178 +25,11 @@ umecob = ( function() {
   var selectedBinding = false
 
   UC.use = function(t) {
-    var b = UC.binding[t] || (function(){ throw E.USE.NOTFOUND(t)})()
+    var b = UC.binding.impls[t] || (function(){ throw E.USE.NOTFOUND(t)})()
     b.init ? b.init() : (function(){ throw E.USE.INIT_NOTFOUND(t)})()
     selectedBinding = b
     return UC
   }
-
-  UC.binding = function() {
-    if (arguments.length == 0) 
-      return selectedBinding
-
-    if (arguments.length != 2) 
-      throw E.BINDING.INVALID_ARGUMENT
-    var name = arguments[0]
-    var hoge = arguments[1]
-
-    return UC
-  }
-
-
-  // bindingの型 new UC.binding.Trait() とするとよい
-  var Trait = function(impl) {
-    impl = impl || {}
-    var jsonize = function(str) {
-      try {
-        return eval("("+str+")") 
-      } catch (e) {
-        console.log("ERROR OCCUERED DURING JSONIZE")
-        console.log(e)
-      }
-    }
-    this.impl = function(obj) { impl = obj; return this }
-    this.getTemplate = { 
-      sync: function(id) { return impl.getSync(id) },
-      async: function(id) { return impl.getAsync(id) },
-    }
-    this.getData = {
-      sync: function(id) { 
-        var data = impl.getSync(id)
-        return (typeof data == "string") ? jsonize(data) : data
-      },
-      async: function(id) {
-        return impl.getAsync(id).next(function(data) {
-          return (typeof data == "string") ? jsonize(data) : data
-        }) 
-      }
-    }
-    this.init = function() {
-    }
-  }
-
-  // 外部のbindingユーザーにTrait型を公開
-  UC.binding.Trait = Trait
-
-
-  // node.js file open binding
-  UC.binding.file = (function(T) {
-    var fs = require("fs")
-    return T.impl({
-
-      getSync : function(id) {
-        return fs.readFileSync(id, "utf-8")
-      },
-
-      getAsync : function(id) {
-        var d = new Deferred().next(function(str) {
-          return str
-        })
-        fs.readFile(id, "utf-8", function(e, str){
-          d.call.call(d, str)
-        })
-        return d
-      }
-    })
-  })(new Trait())
-
-  // file のエイリアスとしてnode を登録
-  UC.binding.node = UC.binding.file
-
-  // node.js url get binding
-  UC.binding.url = (function(T) {
-    var url  = require("url")
-    var http = require("http")
-    return T.impl({
-
-      getSync : function(id) {
-        throw BINDING.URL_SYNC
-      },
-
-      getAsync : function(id) {
-        var d = new Deferred().next(function(str) {
-          return str
-        })
-        var op = url.parse(id)
-        http.get({
-          host: op.hostname || "localhost",
-          port: op.port || 80,
-          path: ( (op.pathname.slice(0,1) == "/") ? "" : "/" ) + op.pathname + (op.search || "")
-        }, function(res){
-          //console.log(res)
-          d.call.call(d, res)
-        })
-        return d
-      }
-    })
-  })(new Trait())
-
-  // jquery ajax binding
-  UC.binding.jquery = ( function() {
-    return new Trait({
-      getSync : function(id) {
-        var str
-        jQuery.ajax({
-          url: id,
-          type: "GET",
-          async: false,
-          success: function(res) {
-            str = res
-          }
-        })
-        return str
-      },
-
-      getAsync : function(id) {
-        var str 
-          , d = new Deferred().next(function(str) {
-          return str
-        })
-        jQuery.ajax({
-          url     : id,
-          type    : 'GET',
-          success : function(res) {
-            d.call.call(d, res)
-          }
-        })
-        return d
-      }
-    })
-  })()
-
-  // client js ajax binding
-  UC.binding.client = (function(T) {
-    var Request = function(){
-      return typeof(ActiveXObject) !== "undefined"   
-        ? new ActiveXObject("Msxml2.XMLHTTP") || new ActiveXObject("Microsoft.XMLHTTP")
-        : new XMLHttpRequest()
-	  }
-
-    return T.impl({
-      getSync : function(id) {
-        var request = new Request()
-        request.open("GET", id, false)
-        if ( request.status == 404 || request.status == 2 ||(request.status == 0 && request.responseText == '') ) return null
-        return request.responseText
-      },
-
-      getAsync : function(id) {
-        var request = new Request()
-        var d = new Deferred().next(function(str) {
-          return str
-        })
-
-        request.onreadystatechange = function(){
-          if(request.readyState == 4){
-            d.call.call(d, str)
-          }
-        }
-        request.open("GET", id)
-        request.send(null)
-        return d
-      }
-    })
-  })(new Trait())
 
   // umecobの非同期版
   UC.async = function(op) {
@@ -239,6 +72,49 @@ umecob = ( function() {
     UC.rendered.fire(op) // dispatch Event:"rendered"
     return op.rendered
   }
+
+  UC.binding = function() {
+    if (arguments.length == 0) 
+      return selectedBinding
+
+    if (arguments.length != 2) 
+      throw E.BINDING.INVALID_ARGUMENT
+    UC.binding.impls = UC.binding.impls || {}
+    UC.binding.impls[arguments[0]] = arguments[1]
+    return UC
+  }
+
+  // bindingの型 new UC.binding.Interface() とするとよい
+  UC.binding.Interface = function(impl) {
+    impl = impl || {}
+    var jsonize = function(str) {
+      try {
+        return eval("("+str+")") 
+      } catch (e) {
+        console.log("ERROR OCCUERED DURING JSONIZE")
+        console.log(e)
+      }
+    }
+    this.impl = function(obj) { impl = obj; return this }
+    this.getTemplate = { 
+      sync: function(id) { return impl.getSync(id) },
+      async: function(id) { return impl.getAsync(id) },
+    }
+    this.getData = {
+      sync: function(id) { 
+        var data = impl.getSync(id)
+        return (typeof data == "string") ? jsonize(data) : data
+      },
+      async: function(id) {
+        return impl.getAsync(id).next(function(data) {
+          return (typeof data == "string") ? jsonize(data) : data
+        }) 
+      }
+    }
+    this.init = function() {
+    }
+  }
+
 
   // Events
   function Evt(defaultName) {
@@ -345,7 +221,7 @@ umecob = ( function() {
           var c = tplArr[i++]
           var oldstate = state
           state = trans[state] ? trans[state].call(this,c) : (function(){ throw "State error: Unknown state '"+ state +"' was given."})()
-          console.log(oldstate + "=>" + c + "で" +state)
+          //console.log(oldstate + "=>" + c + "で" +state)
         }
 
         (this.sync) 
@@ -399,11 +275,6 @@ umecob = ( function() {
       }
     }
 
-    function strToCode() {
-      this.codeBuffer.add('echo("' + this.buffer.join().replace(/\\g/, '\\\\').replace(/\n/g, '\\n').replace(/"/g, '\\"')  + '")')
-      this.buffer.clear()
-    }
-
     var trans = {}
     C.prototype.transitions = trans 
     trans.stack = new T()
@@ -438,12 +309,16 @@ umecob = ( function() {
       }
     }
 
+    function strToCode() {
+      this.codeBuffer.add('echo("' + this.buffer.join().replace(/\\g/, '\\\\').replace(/\n/g, '\\n').replace(/"/g, '\\"')  + '")')
+      this.buffer.clear()
+    }
+
     function insideQuotation(state, type) {
       return function(c) {
         switch (c) {
           case type:
             this.buffer.add(c)
-            console.log(this.transitions.stack)
             return this.transitions.stack.pop()
           default:
             this.buffer.add(c)
@@ -457,7 +332,9 @@ umecob = ( function() {
 
     // ' の中の状態
     trans["INSIDE_SQ"] = insideQuotation("INSIDE_SQ", "'")
+    // " の中の状態
     trans["INSIDE_DQ"] = insideQuotation("INSIDE_DQ", '"')
+    // \ の次
     trans["ESCAPE"] = function(c) {
       switch (c) {
         case '\\':
@@ -470,7 +347,7 @@ umecob = ( function() {
       }
     }
 
-    // [% が出た状態
+    // [%
     trans["JS_WAITING_COMMAND"] = function(c) {
       switch (c) {
         case ' ':
@@ -589,6 +466,123 @@ umecob = ( function() {
   }
   return UC
 })()
+
+// node.js file open binding
+umecob.binding("file", (function(T) {
+  var fs = require("fs")
+  return T.impl({
+
+    getSync : function(id) {
+      return fs.readFileSync(id, "utf-8")
+    },
+
+    getAsync : function(id) {
+      var d = new Deferred().next(function(str) {
+        return str
+      })
+      fs.readFile(id, "utf-8", function(e, str){
+        d.call.call(d, str)
+      })
+      return d
+    }
+  })
+})(new umecob.binding.Interface() ))
+
+
+// node.js url get binding
+umecob.binding("url", (function(T) {
+  var url  = require("url")
+  var http = require("http")
+  return T.impl({
+
+    getSync : function(id) {
+      throw BINDING.URL_SYNC
+    },
+
+    getAsync : function(id) {
+      var d = new Deferred().next(function(str) {
+        return str
+      })
+      var op = url.parse(id)
+      http.get({
+        host: op.hostname || "localhost",
+        port: op.port || 80,
+        path: ( (op.pathname.slice(0,1) == "/") ? "" : "/" ) + op.pathname + (op.search || "")
+      }, function(res){
+        //console.log(res)
+        d.call.call(d, res)
+      })
+      return d
+    }
+  })
+})(new umecob.binding.Interface()) )
+
+// jquery ajax binding
+umecob.binding("jquery", new umecob.binding.Interface({
+  getSync : function(id) {
+    var str
+    jQuery.ajax({
+      url: id,
+      type: "GET",
+      async: false,
+      success: function(res) {
+        str = res
+      }
+    })
+    return str
+  },
+
+  getAsync : function(id) {
+    var str 
+      , d = new Deferred().next(function(str) {
+      return str
+    })
+    jQuery.ajax({
+      url     : id,
+      type    : 'GET',
+      success : function(res) {
+        d.call.call(d, res)
+      }
+    })
+    return d
+  }
+}))
+
+// client js ajax binding
+umecob.binding("client", (function(T) {
+  var Request = function(){
+    return typeof(ActiveXObject) !== "undefined"   
+      ? new ActiveXObject("Msxml2.XMLHTTP") || new ActiveXObject("Microsoft.XMLHTTP")
+      : new XMLHttpRequest()
+  }
+
+  return T.impl({
+    getSync : function(id) {
+      var request = new Request()
+      request.open("GET", id, false)
+      if ( request.status == 404 || request.status == 2 ||(request.status == 0 && request.responseText == '') ) return null
+      return request.responseText
+    },
+
+    getAsync : function(id) {
+      var request = new Request()
+      var d = new Deferred().next(function(str) {
+        return str
+      })
+
+      request.onreadystatechange = function(){
+        if(request.readyState == 4){
+          d.call.call(d, str)
+        }
+      }
+      request.open("GET", id)
+      request.send(null)
+      return d
+    }
+  })
+})(new umecob.binding.Interface()) )
+
+
 
 } catch (e) {
   console.log("UMECOB ERR")
