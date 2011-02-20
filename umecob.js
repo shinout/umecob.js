@@ -13,7 +13,7 @@ function umecob(op) {
     compiler : "standard"
   }
 
-  U.node = (typeof exports === "object" && this === exports )
+  U.node = (typeof exports === "object" && this === exports)
 
   // umecobの非同期版
   U.async = function(op) {
@@ -44,8 +44,8 @@ function umecob(op) {
         compiler = U.compiler(op.compiler || null),
         tpl      = op.tpl || binding.getTemplate.sync(op.tpl_id),
         data     = op.data || binding.getData.sync(op.data_id),
-        compiled = compiler.compile(tpl, true)
-    return compiler.run(compiled, data)
+        compiled = compiler.compile(tpl)
+    return compiler.run(compiled, data, true)
   }
 
   U.use = function() {
@@ -298,12 +298,10 @@ umecob.binding("client", (function(T) {
 umecob.compiler("standard", (function() {
   var C = {}
 
-
-  C.compile = function(tpl, sync) {
+  C.compile = function(tpl) {
     var tplArr = tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '') + '\0'.split(""), // ヌルバイトが終端
         i      = 0,
         state  = {
-          sync       : sync || false,
           name       : "START", 
           buffer     : new T(), 
           stack      : new T(),
@@ -311,24 +309,25 @@ umecob.compiler("standard", (function() {
     while ( state.name ) 
       state.name = trans[state.name] ? trans[state.name].call(state, tplArr[i++]) : (function(){ throw umecob.Error("COMPILER_STANDARD_UNKNOWN_STATE")})()
 
-    sync
-      ? state.codeBuffer.add("echo.getText()")
-      : state.codeBuffer.add("Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i]) } return echo.getText() })")
-
     return state.codeBuffer.join("\n")
   }
 
-  C.run = function(compiled, json) {
+  C.run = function(compiled, json, sync) {
     var buff = new T()
     var echo = function(txt) {
       buff.add(txt)
     }
 
+    echo.sync = sync || false
     echo.defers = {}
 
     echo.addDefer = function(d) {
-      echo.defers[buff.getIndex()] = d
-      buff.increment()
+      if (echo.sync) {
+        echo(d)
+      } else {
+        echo.defers[buff.getIndex()] = d
+        buff.increment()
+      }
     }
 
     echo.put = function(i, v) {
@@ -343,7 +342,10 @@ umecob.compiler("standard", (function() {
       return buff.join()
     }
 
-    return eval("with(json){" + compiled + "}")
+    var code = "with(json){\n" + compiled + "}\n" 
+    code += echo.sync ? "echo.getText()"
+                 : "Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i]) } return echo.getText() })"
+    return eval(code)
   }
 
   // T: buffer
@@ -507,18 +509,14 @@ umecob.compiler("standard", (function() {
   // [%{ 
   trans["JS_INCLUDE"] = jsStartTemplate("JS_INCLUDE", "JS_INCLUDE_PRE_END")
   trans["JS_INCLUDE_PRE_END"] = jsPreEndTemplate("JS_INCLUDE", function() {
-    ( this.sync ) 
-      ? this.codeBuffer.add('echo(umecob.sync(' + ( this.buffer.join() ) + '))')
-      : this.codeBuffer.add('echo.addDefer(umecob(' + ( this.buffer.join() ) + '))')
+    this.codeBuffer.add('echo.addDefer(umecob[echo.sync ? "sync" : "async"](' + ( this.buffer.join() ) + '))')
     this.buffer.clear()
   })
 
   // [%@
   trans["JS_ASYNC"] = jsStartTemplate("JS_ASYNC", "JS_ASYNC_PRE_END")
   trans["JS_ASYNC_PRE_END"] = jsPreEndTemplate("JS_ASYNC", function() {
-    ( this.sync ) 
-      ? this.codeBuffer.add( this.buffer.join() )
-      : this.codeBuffer.add('echo.addDefer(' + ( this.buffer.join() ) + ')')
+    this.codeBuffer.add('echo.addDefer(' + ( this.buffer.join() ) + ')')
     this.buffer.clear()
   })
 

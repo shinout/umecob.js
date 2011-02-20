@@ -40,6 +40,6 @@ function ucNonUse() {
 // ucUrl()
 //ucNonUse()
 //ucFile()
-//ucFileSync()
+ucFileSync()
 //ucDefaultId()
 
