@@ -1,13 +1,9 @@
 try {
-
-// for node.js
-if (typeof exports == "object") 
+if (typeof module == "object") {
   Deferred = require("./jsdeferred.node.js").Deferred
-
-// for client
-if (typeof require == "undefined") 
-  require = function(){}
-
+} else {
+  var require = function(){}
+}
 
 var umecob = ( function() {
   // umecob関数本体
@@ -15,11 +11,10 @@ var umecob = ( function() {
     return UC[op.sync ? "sync" : "async"](op)
   }
 
-
   // umecobの非同期版
   UC.async = function(op) {
     if (typeof Deferred === "undefined") 
-      throw E.ASYNC.DEFERRED_REQUIRED
+      throw UC.Error("DEFERRED_NOTFOUND")
 
     return Deferred.parallel({
       tpl: op.tpl 
@@ -37,7 +32,6 @@ var umecob = ( function() {
 
   // umecobの同期版
   UC.sync = function(op) {
-    op.sync = true
     var tpl = op.tpl || UC.binding().getTemplate.sync(op.tpl_id)
     var data = op.data || UC.binding().getData.sync(op.data_id)
     var compiled = UC.compiler().compile(tpl, true)
@@ -57,7 +51,7 @@ var umecob = ( function() {
   UC.binding = function() {
     if (arguments.length == 0) {
       // Get Current Binding. returns binding
-      return UC.binding.impls[Preferences.binding] || (function(){ throw E.USE.NOTFOUND(Preferences.binding)})()
+      return UC.binding.impls[Preferences.binding] || (function(){ throw UC.Error("BINDING_NOTFOUND", Preferences.binding)})()
     }
 
     if (arguments.length == 1) {
@@ -72,20 +66,15 @@ var umecob = ( function() {
       return UC.binding(arguments[0])
     }
 
-    throw E.BINDING.INVALID_ARGUMENT
+    throw UC.Error("BINDING_INVALID_ARGUMENT")
   }
   UC.binding.impls = UC.binding.impls || {}
 
   // bindingの型
   UC.binding.Interface = function(impl) {
-    impl = impl || { getSync: function(){ throw "NOIMPL"}, getAsync: function() { this.getSync() }}
+    impl = impl || { getSync: function(){ throw UC.Error("BINDING_NO_IMPL")}, getAsync: function() { this.getSync() }}
     var jsonize = function(str) {
-      try {
-        return eval("("+str+")") 
-      } catch (e) {
-        console.log("ERROR OCCUERED DURING JSONIZE")
-        console.log(e)
-      }
+      return eval("("+str+")") 
     }
     this.impl = function(obj) { impl = obj; return this }
     this.getTemplate = { 
@@ -108,7 +97,7 @@ var umecob = ( function() {
 
   UC.compiler = function() {
     if (arguments.length == 0) {
-      return UC.compiler.impls[Preferences.compiler] || (function(){ throw E.COMPILER.NOTFOUND(Preferences.compiler)})()
+      return UC.compiler.impls[Preferences.compiler] || (function(){ throw UC.Error("COMPILER_NOTFOUND", Preferences.compiler)})()
     }
 
     if (arguments.length == 1) {
@@ -121,36 +110,46 @@ var umecob = ( function() {
       UC.compiler(arguments[0])
       return UC
     }
-    throw E.COMPILER.INVALID_ARGUMENT
+    throw UC.Error("COMPILER_INVALID_ARGUMENT")
   }
   UC.compiler.impls = UC.compiler.impls || {}
 
-  /** ERRORS **/
-  var E = {
-    BASIC : "UmeCob Error.",
-    UMECOB: {
-      CALL_USE : "Before calling umecob(), you have to specify your environment with \"umecob.use(t);\" where t = 'file', 'url', 'jquery', 'client', or your customized binding." +
-      "If you'd like to set your own binding, use "+
-      "umecob.binding('someName', {getTemplate: {sync: function(id){}, async: function(id){}},getData: {sync: function(id){}, async: function(id){}}});",
-    },
-    USE: {
-      NOTFOUND: function(t) { return "binding '"+ t +"' not found."}
-    },
-    COMPILER: {
-      NOTFOUND: function(t) { return "compiler '"+ t +"' not found."}
-    },
-    BINDING: {
-      INVALID_ARGUMENT: "invalid argument. you must input 2 arguments, first argument is the name of your binding, and second is the setting of the binding.",
-    },
-    ASYNC: {
-      DEFERRED_REQUIRED: "If you use umecob() asynchronously, you have to include \"JSDeferred\" library. Go to https://github.com/cho45/jsdeferred then download it.",
-    },
-    EVT: {
-      INVALID_ARGUMENTS: "if you bind event to umecob, you should input one argument :function, or two arguments: string and function.",
-    }
+
+  /** About Error **/
+  UC.Error = function() {
+    var name = arguments[0],
+           e = new Error()
+    e.message = (typeof umecob.Error.messages[name] == "undefined") 
+        ? "unspecified internal error in umecob. If you have something to ask, "+
+          "please feel free to send me an e-mail: shinout310 at gmail.com (Shin Suzuki)."
+        : (typeof umecob.Error.messages[name] == "function")
+          ? umecob.Error.messages[name].apply(this, arguments.shift())
+          : umecob.Error.messages[name]
+    e.name = "umecob Error"
+    return e
   }
+
+  UC.Error.messages = function() {
+    if ( arguments.length == 1)
+      return UC.Error.messages[arguments[0]]
+
+    if ( arguments.length == 2)
+      UC.Error.messages[arguments[0]] = arguments[1]
+  }
+
+  UC.Error.messages("DEFERRED_NOTFOUND", "If you use umecob() asynchronously, you have to include \"JSDeferred\" library."+
+                                         " Go to https://github.com/cho45/jsdeferred then download it.")
+  UC.Error.messages("BINDING_NOTFOUND", function() { return "Binding '"+ arguments[0] +"' is not found."})
+  UC.Error.messages("BINDING_INVALID_ARGUMENT", "Invalid number of arguments in umecob.binding(). It requires at most 2 arguments.")
+  UC.Error.messages("BINDING_NO_IMPL", "The 'default' binding doesn't support fetching templates and data by id."+
+                                       " umecob.use(bindingName) , where bindingName = 'file', 'url', 'jquery', 'client', or your customized binding.")
+  UC.Error.messages("COMPILER_NOTFOUND", function() { return "Compiler '"+ arguments[0] +"' is not found."})
+  UC.Error.messages("COMPILER_INVALID_ARGUMENT", "Invalid number of arguments in umecob.compiler(). It requires at most 2 arguments.")
+
   return UC
 })()
+
+/** umecob Bindings  **/
 
 // node.js file open binding
 umecob.binding("file", (function(T) {
@@ -178,10 +177,11 @@ umecob.binding("file", (function(T) {
 umecob.binding("url", (function(T) {
   var url  = require("url")
   var http = require("http")
+  umecob.Error.messages("BINDING_URL_SYNC", "hogehoge")
   return T.impl({
 
     getSync : function(id) {
-      throw BINDING.URL_SYNC
+      throw umecob.Error("BINDING_URL_SYNC")
     },
 
     getAsync : function(id) {
@@ -266,31 +266,29 @@ umecob.binding("client", (function(T) {
   })
 })(new umecob.binding.Interface()) )
 
+/** umecob Compilers  **/
 // Standard Compiler
 umecob.compiler("standard", (function() {
   var C = {}
-  C.compile = function(tpl, sync) { try {
+
+
+  C.compile = function(tpl, sync) {
     var tplArr = tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '') + '\0'.split(""), // ヌルバイトが終端
         i      = 0,
         state  = {
+          sync       : sync || false,
           name       : "START", 
           buffer     : new T(), 
           stack      : new T(),
           codeBuffer : new T() }
     while ( state.name ) 
-      state.name = trans[state.name] ? trans[state.name].call(state, tplArr[i++]) : (function(){ throw "State error: Unknown state '"+ state.name +"' was given."})()
+      state.name = trans[state.name] ? trans[state.name].call(state, tplArr[i++]) : (function(){ throw umecob.Error("COMPILER_STANDARD_UNKNOWN_STATE")})()
 
     sync
       ? state.codeBuffer.add("echo.getText()")
       : state.codeBuffer.add("Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i]) } return echo.getText() })")
 
     return state.codeBuffer.join("\n")
-
-    } catch(e) {
-      console.log("ERR OCCURRED DURING COMPILATION")
-      console.log(e)
-      console.log(e.stack || "no stack")
-    }
   }
 
   C.run = function(compiled, json) {
@@ -319,11 +317,7 @@ umecob.compiler("standard", (function() {
     }
 
     var code = "with(json){" + compiled + "}"
-    try {
-      return eval(code)
-    } catch(e) {
-      console.log(e)
-    }
+    return eval(code)
   }
 
   // T: buffer
@@ -387,7 +381,7 @@ umecob.compiler("standard", (function() {
           this.buffer.add(c)
           return stateName
         case '\0':
-          throw "Syntax error: you have to close quotation."
+          throw umecob.Error("COMPILER_STANDARD_QUOTATION", type)
           return null
       }
     }
@@ -449,7 +443,7 @@ umecob.compiler("standard", (function() {
           this.buffer.add(c)
           return stateName
         case '\0':
-          throw "Syntax error: you have to close [% tag with %] tag."
+          throw umecob.Error("COMPILER_STANDARD_CLOSE_TAG")
           return null
       }
     }
@@ -502,17 +496,17 @@ umecob.compiler("standard", (function() {
     this.buffer.clear()
   })
 
+  umecob.Error.messages("COMPILER_STANDARD_UNKNOWN_STATE", function(){ "State error: Unknown state '"+ arguments[0] +"' was given."})
+  umecob.Error.messages("COMPILER_STANDARD_QUOTATION", function(){ "Syntax error: you have to close quotation [" + arguments[0] +"']."})
+  umecob.Error.messages("COMPILER_STANDARD_CLOSE_TAG", "Syntax error: you have to close [% tag with %] tag.")
+          
   return C
 })())
 
-
-} catch (e) {
-  console.log("UMECOB ERR")
-  console.log(e)
-  console.log(e.stack || "no stack")
+if(typeof  module == "object") {
+  module.exports = umecob
 }
 
-// for node.js
-if (typeof exports == "object") {
-  exports.umecob = umecob
+} catch (e) {
+  console.log(e.stack || e.message || e)
 }

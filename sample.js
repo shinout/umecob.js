@@ -1,18 +1,16 @@
-var umecob = require("./umecob.js").umecob
+var umecob = require("./umecob.js")
 
 // umecob
-try {
-
-function ucfile() {
+function ucFile() {
   umecob.use("file")({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json"})
   .next(function(html) {console.log(html) })
 }
 
-function ucSync() {
+function ucFileSync() {
   var fs = require("fs")
   var tpl = fs.readFileSync('tpls/sample.tpl', "utf-8")
   var json = eval( "(" + fs.readFileSync('data/sample.json', "utf-8") + ")")
-  console.log( umecob.use("node")({tpl: tpl, data: json, "sync": true}) )
+  console.log( umecob.use("file")({tpl: tpl, data: json, sync: true}) )
 }
 
 function ucDefault() {
@@ -31,9 +29,6 @@ function ucUrl() {
 }
 
 // ucUrl()
-ucfile()
-
-} catch (e) {
-  console.log(e)
-  console.log(e.stack || "no stack")
-}
+//ucFile()
+ucFileSync()
+//ucDefaultId()
