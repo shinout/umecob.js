@@ -336,4 +336,4 @@ Deferred.define = function (obj, list) {
 	return Deferred;
 };
 
-exports.Deferred = Deferred
+module.exports = Deferred

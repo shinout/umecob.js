@@ -1,5 +1,9 @@
 var umecob = require("./umecob.js")
 
+for (var i in umecob) {
+  console.log(i)
+}
+
 // umecob
 function ucFile() {
   umecob.use("file")({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json"})
@@ -28,7 +32,14 @@ function ucUrl() {
   .next(function(html) {console.log(html) })
 }
 
+function ucNonUse() {
+  umecob({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json", binding: "file"})
+  .next(function(html) {console.log(html) })
+}
+
 // ucUrl()
+//ucNonUse()
 //ucFile()
-ucFileSync()
+//ucFileSync()
 //ucDefaultId()
+
