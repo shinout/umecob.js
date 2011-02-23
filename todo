@@ -9,3 +9,7 @@ JSONPバインディングで他サイトからもいけるように
 WebSocketバインディング
 umecobコマンドでいけるようにしたらかっけーよな。
 Performanceの比較もしたい！！！！！！
+いろんな入力値でエラーを出して処理する
+コードを短く
+echoというnamespaceの問題をなんとかする
+jsonというnamespaceの問題もなんとかする
