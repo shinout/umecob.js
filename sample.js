@@ -34,7 +34,12 @@ function ucDefaultId() {
 }
 
 function ucUrl() {
-  umecob.use("url")({code: "echo(Header);console.log(Header);", data_id: "http://api.rakuten.co.jp/rws/1.12/json"})
+  umecob.binding("file_url", { 
+    getTemplate : umecob.binding("file").getTemplate,
+    getData     : umecob.binding("url").getData
+  })
+
+  umecob.use("file_url")({tpl_id: "tpls/rakuten.tpl", data_id: "http://api.rakuten.co.jp/rws/1.12/json"})
   .next(function(html) {console.log(html) })
 }
 
@@ -81,9 +86,9 @@ function ucCacheSync() {
 }
 
 
-//ucUrl()
+ucUrl()
 //ucNonUse()
-ucFile()
+//ucFile()
 //ucFileSync()
 //ucStartEndFile()
 //ucStartEndFileSync()

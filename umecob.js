@@ -17,10 +17,10 @@ function umecob(input) {
 
   function createOutput(input) {
     var output = {}
-    var outputKeys = ["tpl", "data", "code", "result"]
-    for ( var i in outputKeys) {
-      if ( input[outputKeys[i]]) 
-        output[outputKeys[i]] = input[outputKeys[i]]
+    var keys = ["tpl", "data", "code", "result", "binding", "compiler"]
+    for ( var i in keys) {
+      if ( input[keys[i]]) 
+        output[keys[i]] = input[keys[i]]
     }
     return output
   }
@@ -35,6 +35,9 @@ function umecob(input) {
 
     var binding  = U.binding(input.binding || null),
         compiler = U.compiler(input.compiler || null)
+    output.binding  = output.binding  || binding.name
+    output.compiler = output.compiler || compiler.name
+
     return Deferred.parallel({
       tpl: ( output.tpl || output.code || output.result)
         ? Deferred.call(function(){return output.tpl})
@@ -62,12 +65,14 @@ function umecob(input) {
     var binding  = U.binding(input.binding || null),
         compiler = U.compiler(input.compiler || null)
 
-        output.tpl    = output.tpl || binding.getTemplate.sync(input.tpl_id)
-        output.data   = output.data || binding.getData.sync(input.data_id)
-        output.code   = output.code || compiler.compile(output.tpl)
-        output.result = output.result || compiler.run(output.code, output.data, true)
-      U.end(input, output)
-      return output.result
+    output.binding  = output.binding  || binding.name
+    output.compiler = output.compiler || compiler.name
+    output.tpl    = output.tpl || binding.getTemplate.sync(input.tpl_id)
+    output.data   = output.data || binding.getData.sync(input.data_id)
+    output.code   = output.code || compiler.compile(output.tpl)
+    output.result = output.result || compiler.run(output.code, output.data, true)
+    U.end(input, output)
+    return output.result
   }
 
   // eventの管理
@@ -119,6 +124,7 @@ function umecob(input) {
 
     if (arguments.length == 2)  {
       // Register Binding. returns umecob
+      arguments[1].name = arguments[0]
       U.binding.impls[arguments[0]] = arguments[1]
       return U.binding(arguments[0])
     }
@@ -127,17 +133,21 @@ function umecob(input) {
   }
   U.binding.impls = U.binding.impls || {}
 
-  // bindingの型
-  U.binding.Interface = function(impl) {
+  // bindingを作りやすくする骨格。
+  U.binding.Frame = function(impl) {
     impl = impl || { getSync: function(){ throw U.Error("BINDING_NO_IMPL")}, getAsync: function() { this.getSync() }}
     var jsonize = function(str) {
       return eval("("+str+")") 
     }
     this.impl = function(obj) { impl = obj; return this }
+
+    // bindingのインターフェイス1: getTemplate(id): return (string) template
     this.getTemplate = { 
       sync: function(id) { return impl.getSync(id) },
       async: function(id) { return impl.getAsync(id) },
     }
+
+    // bindingのインターフェイス1: getData(id) : return (object) data
     this.getData = {
       sync: function(id) { 
         var data = impl.getSync(id)
@@ -150,7 +160,7 @@ function umecob(input) {
       }
     }
   }
-  U.binding("default", new U.binding.Interface())
+  U.binding("default", new U.binding.Frame())
 
   U.compiler = function() {
     if (arguments.length == 0 || !arguments[0]) {
@@ -163,6 +173,7 @@ function umecob(input) {
 
     if (arguments.length == 2)  {
       // Register Compiler. returns umecob
+      arguments[1].name = arguments[0]
       U.compiler.impls[arguments[0]] = arguments[1]
       return U.compiler(arguments[0])
     }
@@ -236,7 +247,7 @@ umecob.binding("file", (function(T) {
       return d
     }
   })
-})(new umecob.binding.Interface() ))
+})(new umecob.binding.Frame() ))
 
 
 // node.js url get binding
@@ -256,20 +267,26 @@ umecob.binding("url", (function(T) {
         return str
       })
       var op = url.parse(id)
+      var result = ""
       http.get({
         host: op.hostname || "localhost",
         port: op.port || 80,
         path: ( (op.pathname.slice(0,1) == "/") ? "" : "/" ) + op.pathname + (op.search || "")
       }, function(res){
-        d.call.call(d, res)
+        res.on("data", function(chunk) {
+          result += chunk.toString()
+        }).on("end", function(){
+          console.log(result)
+          d.call.call(d, result)
+        })
       })
       return d
     }
   })
-})(new umecob.binding.Interface()) )
+})(new umecob.binding.Frame()) )
 
 // jquery ajax binding
-umecob.binding("jquery", new umecob.binding.Interface({
+umecob.binding("jquery", new umecob.binding.Frame({
   getSync : function(id) {
     var str
     jQuery.ajax({
@@ -332,7 +349,7 @@ umecob.binding("client", (function(T) {
       return d
     }
   })
-})(new umecob.binding.Interface()) )
+})(new umecob.binding.Frame()) )
 
 /** umecob Compilers  **/
 // Standard Compiler
