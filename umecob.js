@@ -383,12 +383,12 @@ umecob.compiler("standard", (function() {
     echo.defers = {}
 
     echo.addDefer = function(d) {
-      if (echo.sync) {
-        echo(d)
-      } else {
-        echo.defers[buff.getIndex()] = d
-        buff.increment()
-      }
+      echo.defers[buff.getIndex()] = d
+      buff.increment()
+    }
+
+    echo.addUmecob = function(u) {
+      ( u instanceof Deferred) ? echo.addDefer(u) : echo(u)
     }
 
     echo.put = function(i, v) {
@@ -573,7 +573,7 @@ umecob.compiler("standard", (function() {
   // [%{ 
   trans["JS_INCLUDE"] = jsStartTemplate("JS_INCLUDE", "JS_INCLUDE_PRE_END")
   trans["JS_INCLUDE_PRE_END"] = jsPreEndTemplate("JS_INCLUDE", function() {
-    this.codeBuffer.add('echo.addDefer(umecob[echo.sync ? "sync" : "async"](' + ( this.buffer.join() ) + '))')
+    this.codeBuffer.add('echo.addUmecob(umecob(' + ( this.buffer.join() ) + '))')
     this.buffer.clear()
   })
 
