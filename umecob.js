@@ -1,7 +1,7 @@
 try {
 
-function umecob(op) {
-  return umecob[op.sync ? "sync" : "async"](op)
+function umecob(input) {
+  return umecob[input.sync ? "sync" : "async"](input)
 }
 
 /** adding features to umecob. U is equal to umecob object. **/
@@ -15,38 +15,78 @@ function umecob(op) {
 
   U.node = (typeof exports === "object" && this === exports)
 
+  function createOutput(input) {
+    var output = {}
+    var outputKeys = ["tpl", "data", "code", "result"]
+    for ( var i in outputKeys) {
+      if ( input[outputKeys[i]]) 
+        output[outputKeys[i]] = input[outputKeys[i]]
+    }
+    return output
+  }
+
   // umecobの非同期版
-  U.async = function(op) {
+  U.async = function(input) {
     if (typeof Deferred === "undefined") 
       throw U.Error("DEFERRED_NOTFOUND")
 
-    var binding  = U.binding(op.binding || null),
-        compiler = U.compiler(op.compiler || null)
-    return Deferred.parallel({
-      tpl: op.tpl 
-            ? Deferred.call(function(){return op.tpl})
-            : binding.getTemplate.async(op.tpl_id),
-      data: op.data 
-            ? Deferred.call(function(){return op.data})
-            : binding.getData.async(op.data_id),
+    var output = createOutput(input)
+    U.start(input, output)
 
+    var binding  = U.binding(input.binding || null),
+        compiler = U.compiler(input.compiler || null)
+    return Deferred.parallel({
+      tpl: ( output.tpl || output.code || output.result)
+        ? Deferred.call(function(){return output.tpl})
+        : binding.getTemplate.async(input.tpl_id),
+      data: output.data 
+        ? Deferred.call(function(){return output.data})
+        : binding.getData.async(input.data_id)
     }).next( function(val) {
-      var compiled = compiler.compile(val.tpl)
-      return compiler.run(compiled, val.data);
+      output.tpl    = output.tpl || val.tpl
+      output.data   = output.data || val.data
+      output.code   = output.code || compiler.compile(output.tpl)
+      output.result = output.result || compiler.run(output.code, output.data)
+      U.end(input, output)
+      return output.result
     }).error( function(e) {
       console.log(e.stack || e.message || e)
     })
   }
 
   // umecobの同期版
-  U.sync = function(op) {
-    var binding  = U.binding(op.binding || null),
-        compiler = U.compiler(op.compiler || null),
-        tpl      = op.tpl || binding.getTemplate.sync(op.tpl_id),
-        data     = op.data || binding.getData.sync(op.data_id),
-        compiled = compiler.compile(tpl)
-    return compiler.run(compiled, data, true)
+  U.sync = function(input) {
+    var output = createOutput(input)
+    U.start(input, output)
+
+    var binding  = U.binding(input.binding || null),
+        compiler = U.compiler(input.compiler || null)
+
+        output.tpl    = output.tpl || binding.getTemplate.sync(input.tpl_id)
+        output.data   = output.data || binding.getData.sync(input.data_id)
+        output.code   = output.code || compiler.compile(output.tpl)
+        output.result = output.result || compiler.run(output.code, output.data, true)
+      U.end(input, output)
+      return output.result
   }
+
+  // eventの管理
+  function ev(name) {
+    return function() {
+      if (typeof arguments[0] == "function" ) {
+        Preferences[name] = arguments[0]
+        return U
+      }
+      else if (typeof arguments[0] == "object" && typeof arguments[0][name] == "function"){
+        return arguments[0][name].apply(this, arguments)
+      }
+      else if (typeof Preferences[name] == "function"){
+        return Preferences[name].apply(this, arguments)
+      }
+    }
+  }
+  U.start = ev("start")
+  U.end   = ev("end")
 
   U.use = function() {
     if (arguments.length == 1) {
@@ -156,6 +196,7 @@ function umecob(op) {
 
   U.Error.messages("DEFERRED_NOTFOUND", "If you use umecob() asynchronously, you have to include \"JSDeferred\" library."+
                                          " Go to https://github.com/cho45/jsdeferred then download it.")
+  U.Error.messages("EV_NOTFOUND", "Event '"+arguments[0]+"' is not found.")
   U.Error.messages("BINDING_USE", "Please call umecob.use(bindingName) , where bindingName = 'file', 'url', 'jquery', 'client', or your customized binding.")
   U.Error.messages("BINDING_NODEFAULT", "No default binding is selected. " + U.Error.messages("BINDING_USE"))
   U.Error.messages("BINDING_NOTFOUND", function() { return "Binding '"+ arguments[0] +"' is not found."})
@@ -306,13 +347,16 @@ umecob.compiler("standard", (function() {
           buffer     : new T(), 
           stack      : new T(),
           codeBuffer : new T() }
+    state.codeBuffer.add("with(json){")
     while ( state.name ) 
       state.name = trans[state.name] ? trans[state.name].call(state, tplArr[i++]) : (function(){ throw umecob.Error("COMPILER_STANDARD_UNKNOWN_STATE")})()
 
+    state.codeBuffer.add("echo.getResult()}\n")
     return state.codeBuffer.join("\n")
   }
 
-  C.run = function(compiled, json, sync) {
+  C.run = function(code, json, sync) {
+    console.log(code)
     var buff = new T()
     var echo = function(txt) {
       buff.add(txt)
@@ -342,9 +386,12 @@ umecob.compiler("standard", (function() {
       return buff.join()
     }
 
-    var code = "with(json){\n" + compiled + "}\n" 
-    code += echo.sync ? "echo.getText()"
-                 : "Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i]) } return echo.getText() })"
+    echo.getResult = function() {
+      return echo.sync 
+        ? echo.getText()
+        : Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i]) } return echo.getText() })
+    }
+
     return eval(code)
   }
 

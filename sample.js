@@ -1,16 +1,22 @@
 var umecob = require("./umecob.js")
 
-for (var i in umecob) {
-  console.log(i)
+function umecobProp() {
+  for (var i in umecob) {
+    console.log(i)
+  }
 }
 
-// umecob
 function ucFile() {
   umecob.use("file")({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json"})
   .next(function(html) {console.log(html) })
 }
 
 function ucFileSync() {
+  var html = umecob.use("file")({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json", sync: true})
+  console.log(html)
+}
+
+function ucStatic() {
   var fs = require("fs")
   var tpl = fs.readFileSync('tpls/sample.tpl', "utf-8")
   var json = eval( "(" + fs.readFileSync('data/sample.json', "utf-8") + ")")
@@ -28,7 +34,7 @@ function ucDefaultId() {
 }
 
 function ucUrl() {
-  umecob.use("url")({tpl: "tpl", data_id: "http://api.rakuten.co.jp/rws/1.12/json"})
+  umecob.use("url")({code: "echo(Header);console.log(Header);", data_id: "http://api.rakuten.co.jp/rws/1.12/json"})
   .next(function(html) {console.log(html) })
 }
 
@@ -37,9 +43,50 @@ function ucNonUse() {
   .next(function(html) {console.log(html) })
 }
 
-// ucUrl()
+function ucStartEndFile() {
+  umecob.use("file").start(function(input, output){
+    output.result = "HOGE"
+  }).end(function(input, output){
+    console.log(input.tpl_id)
+  })
+  ({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json"})
+  .next(function(html) {console.log(html) })
+}
+
+function ucStartEndFileSync() {
+  var html = umecob.use("file").start(function(input, output){
+    output.result = "HOGE"
+  }).end(function(input, output){
+    console.log(input.tpl_id)
+  })
+  ({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json", sync: true})
+  console.log(html)
+}
+
+function ucCacheSync() {
+  var db = {}
+  umecob.use("file").start(function(input, output){
+    if ( typeof db[input.tpl_id] != "undefined") {
+      output.code = db[input.tpl_id]
+    }
+  }).end(function(input, output){
+    if (input.tpl_id) {
+      db[input.tpl_id] = "console.log('HOGEEEEEEEE');"+ output.code
+    }
+  })
+
+  console.log (umecob({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json", sync: true}) )
+  console.log (umecob({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json", sync: true}) )
+  console.log (umecob({tpl_id: "tpls/sample.tpl", data_id: "data/sample.json", sync: true}) )
+}
+
+
+//ucUrl()
 //ucNonUse()
-//ucFile()
-ucFileSync()
+ucFile()
+//ucFileSync()
+//ucStartEndFile()
+//ucStartEndFileSync()
+//ucCacheSync()
 //ucDefaultId()
 
