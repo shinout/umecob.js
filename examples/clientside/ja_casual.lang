@@ -1,0 +1,12 @@
+{ 
+  title                 : "やっぱりumecob.jsっしょ",
+  chooseLang            : "どの言葉で見る？",
+  menu                  : "めぬー",
+  synchronousSample     : "とりあえず!",
+  showJSVariables       : "JavaScriptの変数をみる",
+  runJSCode             : "JavaScriptを走らす",
+
+
+
+  run                   : "いけーー"
+}

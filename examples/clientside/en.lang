@@ -1,0 +1,11 @@
+{ 
+  title                 : "umecob.js examples",
+  chooseLang            : "Choose Language",
+  menu                  : "example list",
+  synchronousSample     : "call synchronously",
+  showJSVariables       : "Show JavaScript variables",
+  runJSCode             : "Run JavaScript Code",
+
+
+  run                   : "run!"
+}

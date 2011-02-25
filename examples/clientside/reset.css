@@ -1,0 +1,145 @@
+/* --------------------------------------------------
+
+    0. Reset
+-------------------------------------------------- */
+body, div, dl, dt, dd, ul, ol, li,
+h1, h2, h3, h4, h5, h6,
+object, iframe, pre, code, p, blockquote,
+form, fieldset, legend,
+table, th, td, caption, tbody, tfoot, thead,
+article, aside, figure, footer, header,
+hgroup, menu, nav, section, audio, video, canvas {
+    margin: 0;
+    padding: 0;
+}
+article, aside, figure, figcaption,footer,
+h1, h2, h3, h4, h5, h6, header, hgroup, menu, nav, section {
+    display: block;
+}
+
+body {
+    color: #595757;
+    font-family: Meiryo, "メイリオ", "hiragino kaku gothic pron", "ヒラギノ角ゴ pron w3", "ＭＳ Ｐゴシック",'droid sans', sans-serif;
+    font-size: 13px;
+    *font-size: 82%;
+    line-height: 1.5;
+}
+/*
+font-size list (base: 13px)
+ 62% =  8px
+ 70% =  9px
+ 77% = 10px
+ 85% = 11px        162% = 21px        239% = 31px
+ 93% = 12px        170% = 22px        247% = 32px
+100% = 13px        177% = 23px        254% = 33px
+108% = 14px        185% = 24px        262% = 34px
+116% = 15px        193% = 25px        270% = 35px
+124% = 16px        200% = 26px        277% = 36px
+131% = 17px        208% = 27px        285% = 37px
+139% = 18px        216% = 28px        293% = 38px
+147% = 19px        224% = 29px        300% = 39px
+154% = 20px        231% = 30px        308% = 40px
+*/
+a:link {
+    color: #3e6dac;
+    text-decoration: underline;
+}
+a:visited {
+    color: #883388;
+    text-decoration: underline;
+}
+a:hover,
+a:active {
+    color: #3e6dac;
+    text-decoration: none;
+}
+
+/* --------------------------------------------------
+    2. Heading, Paragraph
+-------------------------------------------------- */
+h1, h2, h3, h4, h5, h6 {
+    font-size: 100%;
+}
+
+/* --------------------------------------------------
+    3. List
+-------------------------------------------------- */
+li { list-style: none; }
+
+/* --------------------------------------------------
+    4. Table
+-------------------------------------------------- */
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    font-size: 100%;
+    font-family: inherit;
+}
+caption, th, td {
+    text-align: left;
+    vertical-align: top;
+    font-weight: normal;
+}
+
+/* --------------------------------------------------
+    5. Form
+-------------------------------------------------- */
+fieldset { border: none; }
+input, textarea, select, label {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 100%;
+    font-family: inherit;
+    vertical-align: middle;
+}
+label { cursor: pointer; }
+textarea { overflow: auto; }
+legend {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+/* --------------------------------------------------
+    6. Other
+-------------------------------------------------- */
+img {
+    border: none;
+    vertical-align: top;
+}
+object {
+    vertical-align: middle;
+    outline: none;
+}
+em, strong {
+    font-weight: bold;
+    font-style: normal;
+}
+abbr, acronym {
+    border: none;
+    font-variant: normal;
+}
+q:before, q:after { content: ''; }
+address, caption, cite, code, dfn, var {
+    font-weight: normal;
+    font-style: normal;
+}
+code, pre { font-family: monospace; }
+sup { vertical-align: text-top; }
+sub { vertical-align: text-bottom; }
+hr { display: none; }
+
+/* ------------------------------------------------------------
+    7. For IE6/7
+------------------------------------------------------------ */
+
+/* for IE7: page zoom bug fix */
+*:first-child+html body,
+*:first-child+html br { letter-spacing: 0; }
+
+

@@ -1,0 +1,111 @@
+<h1>[%=lang.title%]</h1>
+
+<nav id="change-lang">
+[%=lang.chooseLang %] :&nbsp;
+<select onchange="console.log($(this).val());load( $(this).val() )">
+[% for (var k in v.langs) { %]
+<option value="[%=k%]"[% if (load.lang==k) echo(' selected="selected"')%]>[%=v.langs[k] %]</option>
+[% } %]
+</select>
+
+</nav>
+
+<nav id="menu">
+<h1>[%=lang.menu%]</h1>
+<ul>
+<li></li>
+</ul>
+</nav>
+
+<section id="main">
+
+
+
+
+<section class="example" id="synchronous">
+<h1>[%=lang.synchronousSample %]</h1>
+<dl>
+
+<dt>code</dt>
+<dd class="code">
+<pre>
+<code>[%=esc('umecob({tpl: "<p>\[%=var01 %], \[%=var02 %]!!</p>",  data: {var01: "Hello", var02: "World"} })')%]</code>
+</pre>
+</dd>
+
+
+<dt>result</dt>
+<dd class="result" id="result[%=++i%]">
+<script type="text/javascript">
+function result[%=i%]() {
+  umecob({tpl: "<p>\[%=var01 %], \[%=var02 %]!!</p>",  data: {var01: "Hello", var02: "World"} }).
+  next(function(result) {
+    $("#result[%=i%]").html(result)
+  })
+}
+</script>
+<button onclick="result[%=i%]()">[%=lang.run %]</button>
+</dd>
+</dl>
+</section>
+
+
+
+
+<section class="example" id="embed-variables">
+<h1>[%=lang.showJSVariables %]</h1>
+<dl>
+
+<dt>code</dt>
+<dd class="code">
+<pre>
+<code>[%=esc('umecob({tpl: "<p>\[%=var01 %], \[%=var02 %]!!</p>",  data: {var01: "Hello", var02: "World"} })')%]</code>
+</pre>
+</dd>
+
+<dt>result</dt>
+<dd class="result" id="result[%=++i%]">
+<script type="text/javascript">
+function result[%=i%]() {
+  umecob({tpl: "<p>\[%=var01 %], \[%=var02 %]!!</p>",  data: {var01: "Hello", var02: "World"} }).
+  next(function(result) {
+    $("#result[%=i%]").html(result)
+  })
+}
+</script>
+<button onclick="result[%=i%]()">[%=lang.run %]</button>
+</dd>
+</dl>
+</section>
+
+
+
+
+
+<section class="example" id="embed-code">
+<h1>[%=lang.runJSCode %]</h1>
+<dl>
+
+<dt>code</dt>
+<dd class="code">
+<pre>
+<code>[%=esc('umecob({tpl: "<p>\[%=var01 %], \[%=var02 %]!!</p>",  data: {var01: "Hello", var02: "World"} })')%]</code>
+</pre>
+</dd>
+
+<dt>result</dt>
+<dd class="result">
+[% {tpl: "<p>\[%=var01 %], \[%=var02 %]!!</p>", data: {var01: "Hello", var02: "World"} }%]
+</dd>
+</dl>
+</section>
+
+
+
+
+
+
+
+
+
+</section><!-- #main -->

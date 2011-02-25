@@ -194,7 +194,7 @@ function umecob(st) {
   U.Error.messages("DEFERRED_NOTFOUND", "If you use umecob() asynchronously, you have to include \"JSDeferred\" library."+
                                          " Go to https://github.com/cho45/jsdeferred then download it.")
   U.Error.messages("EV_NOTFOUND", "Event '"+arguments[0]+"' is not found.")
-  U.Error.messages("BINDING_USE", "Please call umecob.use(bindingName) , where bindingName = 'file', 'url', 'jquery', 'client', or your customized binding.")
+  U.Error.messages("BINDING_USE", "Please call umecob.use(bindingName) , where bindingName = 'file', 'url', 'jquery', 'xhr', or your customized binding.")
   U.Error.messages("BINDING_NODEFAULT", "No default binding is selected. " + U.Error.messages("BINDING_USE"))
   U.Error.messages("BINDING_NOTFOUND", function() { return "Binding '"+ arguments[0] +"' is not found."})
   U.Error.messages("BINDING_INVALID_ARGUMENT", "Invalid number of arguments in umecob.binding(). It requires at most 2 arguments.")
@@ -303,8 +303,8 @@ umecob.binding("jquery", new umecob.binding.Frame({
   }
 }))
 
-// client js ajax binding
-umecob.binding("client", (function(T) {
+// client js binding with XMLHttpRequest
+umecob.binding("xhr", (function(T) {
   if (umecob.node) return T
   var Request = function(){
     return typeof(ActiveXObject) !== "undefined"   
@@ -328,7 +328,7 @@ umecob.binding("client", (function(T) {
 
       request.onreadystatechange = function(){
         if(request.readyState == 4){
-          d.call.call(d, str)
+          d.call.call(d, request.responseText)
         }
       }
       request.open("GET", id)
@@ -392,7 +392,7 @@ umecob.compiler("standard", (function() {
     echo.getResult = function() {
       return echo.sync 
         ? echo.getText()
-        : Deferred.parallel(echo.getDefers()).next( function(defers) { for ( var i in defers ){ echo.put(i,defers[i]) } return echo.getText() })
+        : Deferred.parallel(echo.getDefers()).next( function(results) {for ( var i in results ){ echo.put(i,results[i]) } return echo.getText() })
     }
 
     return eval(code)
@@ -535,7 +535,7 @@ umecob.compiler("standard", (function() {
           return "START"
         default:
           this.buffer.add("%"+c)
-          return mainState
+          return mainStateName
         case '\0':
           return trans[mainStateName].call(this, c)
       }
