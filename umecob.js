@@ -1,78 +1,64 @@
 try {
 
-function umecob(input) {
-  return umecob[input.sync ? "sync" : "async"](input)
+function umecob(st) {
+  return umecob[st.sync ? "sync" : "async"](st || {})
 }
 
 /** adding features to umecob. U is equal to umecob object. **/
 ( function(U) {
 
   /** Global Preferences of umecob.binding and umecob.compiler **/
-  var Preferences = {
-    binding  : "default",
-    compiler : "standard"
-  }
+  var Preferences = { binding  : "default", compiler : "standard" }
 
   U.node = (typeof exports === "object" && this === exports)
 
-  function createOutput(input) {
-    var output = {}
-    var keys = ["tpl", "data", "code", "result", "binding", "compiler"]
-    for ( var i in keys) {
-      if ( input[keys[i]]) 
-        output[keys[i]] = input[keys[i]]
-    }
-    return output
-  }
-
-  // umecobの非同期版
-  U.async = function(input) {
+  // asynchronized umecob. returns Deferred Object.
+  U.async = function(st) {
     if (typeof Deferred === "undefined") 
       throw U.Error("DEFERRED_NOTFOUND")
 
-    var output = createOutput(input)
-    U.start(input, output)
+    U.start(st)
 
-    var binding  = U.binding(input.binding || null),
-        compiler = U.compiler(input.compiler || null)
-    output.binding  = output.binding  || binding.name
-    output.compiler = output.compiler || compiler.name
+    var binding  = U.binding(st.binding || null),
+        compiler = U.compiler(st.compiler || null)
+    st.binding  = st.binding  || binding.name
+    st.compiler = st.compiler || compiler.name
 
     return Deferred.parallel({
-      tpl: ( output.tpl || output.code || output.result)
-        ? Deferred.call(function(){return output.tpl})
-        : binding.getTemplate.async(input.tpl_id),
-      data: output.data 
-        ? Deferred.call(function(){return output.data})
-        : binding.getData.async(input.data_id)
+      tpl: ( st.tpl || st.code || st.result)
+        ? Deferred.call(function(){return st.tpl})
+        : binding.getTemplate.async(st.tpl_id),
+
+      data: st.data 
+        ? Deferred.call(function(){return st.data})
+        : binding.getData.async(st.data_id)
     }).next( function(val) {
-      output.tpl    = output.tpl || val.tpl
-      output.data   = output.data || val.data
-      output.code   = output.code || compiler.compile(output.tpl)
-      output.result = output.result || compiler.run(output.code, output.data)
-      U.end(input, output)
-      return output.result
+      st.tpl    = st.tpl || val.tpl
+      st.data   = st.data || val.data
+      st.code   = st.code || compiler.compile(st.tpl)
+      st.result = st.result || compiler.run(st.code, st.data)
+      U.end(st)
+      return st.result
     }).error( function(e) {
       console.log(e.stack || e.message || e)
     })
   }
 
   // umecobの同期版
-  U.sync = function(input) {
-    var output = createOutput(input)
-    U.start(input, output)
+  U.sync = function(st) {
+    U.start(st)
 
-    var binding  = U.binding(input.binding || null),
-        compiler = U.compiler(input.compiler || null)
+    var binding  = U.binding(st.binding || null),
+        compiler = U.compiler(st.compiler || null)
 
-    output.binding  = output.binding  || binding.name
-    output.compiler = output.compiler || compiler.name
-    output.tpl    = output.tpl || binding.getTemplate.sync(input.tpl_id)
-    output.data   = output.data || binding.getData.sync(input.data_id)
-    output.code   = output.code || compiler.compile(output.tpl)
-    output.result = output.result || compiler.run(output.code, output.data, true)
-    U.end(input, output)
-    return output.result
+    st.binding  = st.binding  || binding.name
+    st.compiler = st.compiler || compiler.name
+    st.tpl    = st.tpl || binding.getTemplate.sync(st.tpl_id)
+    st.data   = st.data || binding.getData.sync(st.data_id)
+    st.code   = st.code || compiler.compile(st.tpl)
+    st.result = st.result || compiler.run(st.code, st.data, true)
+    U.end(st)
+    return st.result
   }
 
   // eventの管理
@@ -276,7 +262,6 @@ umecob.binding("url", (function(T) {
         res.on("data", function(chunk) {
           result += chunk.toString()
         }).on("end", function(){
-          console.log(result)
           d.call.call(d, result)
         })
       })
@@ -357,7 +342,7 @@ umecob.compiler("standard", (function() {
   var C = {}
 
   C.compile = function(tpl) {
-    var tplArr = tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '') + '\0'.split(""), // ヌルバイトが終端
+    var tplArr = (typeof tpl === "string")  ? tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '') + '\0'.split("") : '\0',
         i      = 0,
         state  = {
           name       : "START", 
@@ -373,7 +358,6 @@ umecob.compiler("standard", (function() {
   }
 
   C.run = function(code, json, sync) {
-    console.log(code)
     var buff = new T()
     var echo = function(txt) {
       buff.add(txt)
