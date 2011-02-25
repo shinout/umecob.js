@@ -275,10 +275,11 @@ umecob.binding("jquery", new umecob.binding.Frame({
   getSync : function(id) {
     var str
     jQuery.ajax({
-      url: id,
-      type: "GET",
-      async: false,
-      success: function(res) {
+      url      : id,
+      type     : "GET",
+      dataType : 'text',
+      async    : false,
+      success  : function(res) {
         str = res
       }
     })
@@ -291,9 +292,10 @@ umecob.binding("jquery", new umecob.binding.Frame({
       return str
     })
     jQuery.ajax({
-      url     : id,
-      type    : 'GET',
-      success : function(res) {
+      url      : id,
+      type     : 'GET',
+      dataType : 'text',
+      success  : function(res) {
         d.call.call(d, res)
       }
     })
