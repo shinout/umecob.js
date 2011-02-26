@@ -216,18 +216,26 @@ if (umecob.node) {
 // node.js file open binding
 umecob.binding("file", (function(T) {
   if (!umecob.node) return T
-  var fs = require("fs")
+  var fs   = require("fs"),
+      path = __dirname + "/"
   return T.impl({
 
     getSync : function(id) {
-      return fs.readFileSync(id, "utf-8")
+      try {
+        return fs.readFileSync((id.substr(0,1) == "/")? id : path + id, "utf-8")
+      } catch (e) {
+        console.log(e.stack || e.message || e)
+        return e.message || e
+      }
     },
 
     getAsync : function(id) {
       var d = new Deferred().next(function(str) {
         return str
       })
-      fs.readFile(id, "utf-8", function(e, str){
+      fs.readFile((id.substr(0,1) == "/")? id : path + id, "utf-8", function(e, str){
+        if (e) 
+          throw e
         d.call.call(d, str)
       })
       return d

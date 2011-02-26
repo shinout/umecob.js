@@ -3,7 +3,7 @@
 #URLバインディングがうまくいくかどうか
 #バインディングをtplはこっち、dataはこっち、ってできるようにしたい
 サンプルを書く
-タグをtplの中にいれたときにhtmlにパースされちゃう。htmlspecialcharsができるといいなと思うが。
+#タグをtplの中にいれたときにhtmlにパースされちゃう。htmlspecialcharsができるといいなと思うが。
 File API用のバインディング
 jQバインディングでsync版を確認
 clientバインディングの確認 > IE対応も含む
