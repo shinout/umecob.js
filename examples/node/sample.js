@@ -1,5 +1,12 @@
 var umecob = require("../../umecob.js")
 
+/*** use none ***/
+umecob({tpl: "examples/node/file_async.tpl" })
+.next(function(result) {
+  console.log(result)
+})
+
+
 /*** use filesystem ***/
 
 /* asynchronous */
@@ -11,4 +18,6 @@ umecob.use("file")({tpl_id: "examples/node/file_async.tpl", data: {title: "Async
 /* synchronous */
 var result = umecob.use("file")({sync: true, tpl_id: "examples/node/file_sync.tpl", data: {name: "ya", method: "Synchronous"}  })
 console.log(result)
+
+
 

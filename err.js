@@ -13,8 +13,8 @@ function invalidMethod() {
 //invalidMethod()
 
 
-function invalidMethod() {
+function invalidType() {
   // umecob method name not found
-  umecob.user("file")
+  umecob.use("file")({tpl_id: "hoge", data_id: {title: "title"}})
 }
-// 
+invalidType()
