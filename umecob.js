@@ -19,9 +19,22 @@ function umecob(st) {
 
   /** Global Preferences of umecob.binding and umecob.compiler **/
   var Preferences = { binding  : "default", compiler : "standard" }
+  function common_start(st) {
+    U.start(st)
+    st.binding_obj  = U.binding(st.binding || null),
+    st.compiler_obj = U.compiler(st.compiler || null)
+    st.binding      = st.binding  || st.binding_obj.name
+    st.compiler     = st.compiler || st.compiler_obj.name
+  }
 
-  function checkTemplateType(tpl) { return (typeof tpl == "string") || (function(){throw U.Error("UMECOB_INVALID_TEMPLATE", typeof tpl) })()}
-  function checkDataType(data) { return (typeof data == "object") || (function(){throw U.Error("UMECOB_INVALID_DATA", typeof data) })()}
+  function common_end(st) {
+    function checkTemplateType(tpl) { return (typeof tpl == "string") || (function(){throw U.Error("UMECOB_INVALID_TEMPLATE", typeof tpl) })()}
+    function checkDataType(data) { return (typeof data == "object") || (function(){throw U.Error("UMECOB_INVALID_DATA", typeof data) })()}
+    st.code   = st.code ||  ( checkTemplateType(st.tpl) ? st.compiler_obj.compile(st.tpl) : "")
+    st.result = st.result || ( checkDataType(st.data) ? st.compiler_obj.run(st.code, st.data, st.sync || false) : {})
+    U.end(st)
+    return st.result
+  }
 
   U.node = (typeof exports === "object" && this === exports)
 
@@ -30,48 +43,31 @@ function umecob(st) {
     if (typeof Deferred === "undefined") 
       throw U.Error("DEFERRED_NOTFOUND")
 
-    U.start(st)
-
-    var binding  = U.binding(st.binding || null),
-        compiler = U.compiler(st.compiler || null)
-    st.binding  = st.binding  || binding.name
-    st.compiler = st.compiler || compiler.name
+    common_start(st)
 
     return Deferred.parallel({
       tpl: ( st.tpl || st.code || st.result)
         ? Deferred.call(function(){return st.tpl})
-        : binding.getTemplate.async(st.tpl_id),
+        : st.binding_obj.getTemplate.async(st.tpl_id),
 
       data: st.data 
         ? Deferred.call(function(){return st.data})
         : (st.data_id) 
-          ? binding.getData.async(st.data_id)
+          ? st.binding_obj.getData.async(st.data_id)
           : Deferred.call(function(){return {} })
     }).next( function(val) {
       st.tpl    = st.tpl || val.tpl
-      st.code   = st.code ||  ( checkTemplateType(st.tpl) ? compiler.compile(st.tpl) : "")
       st.data   = st.data || val.data || {}
-      st.result = st.result || ( checkDataType(st.data) ? compiler.run(st.code, st.data) : {})
-      U.end(st)
-      return st.result
+      return common_end(st)
     })
   }
 
   // umecobの同期版
   U.sync = function(st) {
-    U.start(st)
-
-    var binding  = U.binding(st.binding || null),
-        compiler = U.compiler(st.compiler || null)
-
-    st.binding  = st.binding  || binding.name
-    st.compiler = st.compiler || compiler.name
-    st.tpl    = st.tpl || binding.getTemplate.sync(st.tpl_id)
-    st.code   = st.code ||  ( checkTemplateType(st.tpl) ? compiler.compile(st.tpl) : "")
-    st.data   = st.data || ( (st.data_id) ? binding.getData.sync(st.data_id) : {})
-    st.result = st.result || ( checkDataType(st.data) ? compiler.run(st.code, st.data, true) : {})
-    U.end(st)
-    return st.result
+    common_start(st)
+    st.tpl    = st.tpl || st.binding_obj.getTemplate.sync(st.tpl_id)
+    st.data   = st.data || ( (st.data_id) ? st.binding_obj.getData.sync(st.data_id) : {})
+    return common_end(st)
   }
 
   // eventの管理
@@ -118,7 +114,7 @@ function umecob(st) {
     }
 
     if (arguments.length == 1) {
-      return U.binding.impls[ arguments[0] ] || (function(){ throw U.Error("BINDING_NOTFOUND", arguments[0])})()
+      return U.binding.impls[ arguments[0] ] || (function(name){ throw U.Error("BINDING_NOTFOUND", name)})(arguments[0])
     }
 
     if (arguments.length == 2)  {

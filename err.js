@@ -7,9 +7,10 @@ function argMistake() {
 //argMistake()
 
 function invalidBinding() {
-  umecob.use("flie")
+  umecob.use("flie")({tpl: "hoge", data_id: {title: "title"}})
+  .next(function(result){ console.log(result)})
 }
-invalidBinding()
+//invalidBinding()
 
 
 function invalidMethod() {
