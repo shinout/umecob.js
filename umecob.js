@@ -1,7 +1,9 @@
 try {
 
 function umecob(st) {
-  return umecob[st.sync ? "sync" : "async"](st || {})
+  if (typeof st == "object") 
+     umecob[st.sync ? "sync" : "async"](st || {})
+  throw umecob.Error("UMECOB_ARG")
 }
 
 /** adding features to umecob. U is equal to umecob object. **/
@@ -191,6 +193,7 @@ function umecob(st) {
       U.Error.messages[arguments[0]] = arguments[1]
   }
 
+  U.Error.messages("UMECOB_ARG", "umecob() requires one object argument. See README for detail of the argument.")
   U.Error.messages("DEFERRED_NOTFOUND", "If you use umecob() asynchronously, you have to include \"JSDeferred\" library."+
                                          " Go to https://github.com/cho45/jsdeferred then download it.")
   U.Error.messages("EV_NOTFOUND", "Event '"+arguments[0]+"' is not found.")
@@ -222,7 +225,7 @@ umecob.binding("file", (function(T) {
 
     getSync : function(id) {
       try {
-        return fs.readFileSync((id.substr(0,1) == "/")? id : path + id, "utf-8")
+        return fs.readFileSync((id.slice(0,1) == "/")? id : path + id, "utf-8")
       } catch (e) {
         console.log(e.stack || e.message || e)
         return e.message || e
@@ -233,7 +236,7 @@ umecob.binding("file", (function(T) {
       var d = new Deferred().next(function(str) {
         return str
       })
-      fs.readFile((id.substr(0,1) == "/")? id : path + id, "utf-8", function(e, str){
+      fs.readFile((id.slice(0,1) == "/")? id : path + id, "utf-8", function(e, str){
         if (e) 
           throw e
         d.call.call(d, str)
