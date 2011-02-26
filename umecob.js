@@ -142,7 +142,7 @@ function umecob(st) {
         str = "("+str+")";
         return eval(str);
       } catch (e) {
-        JSLINT = JSLINT || (umecob.node ? require("./fulljslint.js") : null);
+        JSLINT = (typeof JSLINT == "function") ? JSLINT : (umecob.node ? require("./fulljslint.js") : null);
         if (JSLINT) {
           var codes = str.split("\n");
           JSLINT(str);
@@ -472,7 +472,7 @@ umecob.compiler("standard", (function() {
     try {
       return eval(code);
     } catch (e) {
-      JSLINT = JSLINT || (umecob.node ? require("./fulljslint.js") : null);
+      JSLINT = (typeof JSLINT == "function") ? JSLINT : (umecob.node ? require("./fulljslint.js") : null);
       if (JSLINT) {
         var codes = code.split("\n");
         var code4lint = new T();
