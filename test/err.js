@@ -1,59 +1,64 @@
-var umecob = require("../umecob.js")
+var umecob = require("../umecob.js");
 
 function argMistake() {
   umecob("template", "file")
-  .next(function(result){ console.log(result)})
+  .next(function(result){ console.log(result)});
 }
-//argMistake()
+//argMistake();
 
 function invalidBinding() {
   umecob.use("flie")({tpl: "hoge", data_id: {title: "title"}})
-  .next(function(result){ console.log(result)})
+  .next(function(result){ console.log(result)});
 }
-//invalidBinding()
+//invalidBinding();
 
 
 function invalidMethod() {
-  umecob.user("file")
+  umecob.user("file");
 }
-//invalidMethod()
+//invalidMethod();
 
 
 function invalidDataIdType() {
   umecob.use("file")({tpl: "hoge", data_id: {title: "title"}})
-  .next(function(result){ console.log(result)})
+  .next(function(result){ console.log(result)});
 }
-//invalidDataIdType()
+//invalidDataIdType();
 
 function invalidTplIdType() {
   umecob.use("file")({tpl_id: {}, data: {title: "title"}})
-  .next(function(result){ console.log(result)})
+  .next(function(result){ console.log(result)});
 }
-//invalidTplIdType()
+//invalidTplIdType();
 
 function invalidDataType() {
   umecob.use("file")({tpl: "template", data: '{title: "title"}'})
   .next(function(result){ console.log(result)})
 }
-//invalidDataType()
+//invalidDataType();
 
 function invalidTplType() {
   umecob.use("file")({tpl: {}, data: {title: "title"}})
-  .next(function(result){ console.log(result)})
+  .next(function(result){ console.log(result)});
 }
-//invalidTplType()
+//invalidTplType();
 
 function invalidFileName() {
   umecob.use("file")({tpl_id: "hoge", data: {title: "title"}})
-  .next(function(result){ console.log(result)})
+  .next(function(result){ console.log(result)});
 }
-//invalidFileName()
+//invalidFileName();
 
 
 function syntaxError01() {
   umecob.use("file")({tpl_id: "test/tpls/syntax_error01.tpl", data: {title: "title"}})
-  .next(function(result){ console.log(result)})
+  .next(function(result){ console.log(result)});
 }
-syntaxError01()
+syntaxError01();
 
+function jsonError() {
+  umecob.use("file")({tpl: "tmpl", data_id: "test/data/json_error.data"} )
+  .next(function(result){ console.log(result)});
+}
+//jsonError();
 

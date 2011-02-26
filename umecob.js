@@ -138,7 +138,29 @@ function umecob(st) {
     var jsonize = function(str) {
       if ( str == "") 
         return {};
-      return eval("("+str+")");
+      try {
+        str = "("+str+")";
+        return eval(str);
+      } catch (e) {
+        var JSLINT = JSLINT || (umecob.node ? require("./fulljslint.js") : null);
+        if (JSLINT) {
+          var codes = str.split("\n");
+          JSLINT(str);
+          var linenum   = JSLINT.errors[0].line;
+          var len       = codes.length;
+          var code4disp = new Array();
+          for (var i = Math.max(linenum - 6, 0); i < Math.min(linenum + 6, len); i++) { 
+            code4disp.push( (i == linenum -1 ? "*" : "") +  (parseInt(i)+1) + "\t"+codes[i]);
+          }
+          console.log(e.message || e);
+          console.log(JSLINT.errors[0].reason+" at line " + linenum + " (evaled code below.)");
+          console.log(U.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
+        } else {
+          console.log(U.Error("JSLINT_REQUIRED"));
+          console.log(e.stack || e.message || e);
+        }
+        return {};
+      }
     };
     var checkIdType = function(id) {
       if (typeof id != "string") 
@@ -226,6 +248,12 @@ function umecob(st) {
   U.Error.messages("DEFERRED_NOTFOUND", "If you use umecob() asynchronously, you have to include \"JSDeferred\" library."+
                                          " Go to https://github.com/cho45/jsdeferred then download it.");
   U.Error.messages("EV_NOTFOUND", function(){ return "Event '"+arguments[1]+"' is not found."});
+  U.Error.messages("SHOW_CODE", function(){ 
+    return "\n\n//------------------------------------//\n" +
+           "//-------------- start ---------------//\n" +
+                          arguments[1]  + "\n"          +
+           "//--------------- end ----------------//\n" +
+           "//------------------------------------//\n\n";});
   U.Error.messages("BINDING_USE", "Please call umecob.use(bindingName) , where bindingName = 'file', 'url', 'jquery', 'xhr', or your customized binding.");
   U.Error.messages("BINDING_NODEFAULT", "No default binding is selected. " + U.Error.messages("BINDING_USE"));
   U.Error.messages("BINDING_NOTFOUND", function() { return "Binding '"+ arguments[1] +"' is not found."});
@@ -387,7 +415,7 @@ umecob.compiler("standard", (function() {
           codeBuffer : new T() };
 
     state.codeBuffer.add("try{ ");
-    state.codeBuffer.add(" with (json) {");
+    state.codeBuffer.add(" with (json) { // this line has to be removed when passing to #JSLINT#");
 
     while ( state.name ) {
       state.name = trans[state.name] 
@@ -396,7 +424,8 @@ umecob.compiler("standard", (function() {
     }
 
     state.codeBuffer.add("echo.getResult();");
-    state.codeBuffer.add("}}catch(e){");
+    state.codeBuffer.add("} // this line has to be removed when passing to #JSLINT#");
+    state.codeBuffer.add("}catch(e){");
     state.codeBuffer.add("console.log(e.stack || e.message || e);");
     state.codeBuffer.add("e.stack || e.message || e;}\n");
     return state.codeBuffer.join("\n");
@@ -441,13 +470,29 @@ umecob.compiler("standard", (function() {
     try {
       return eval(code);
     } catch (e) {
-      console.log(e.stack || e.message || e);
-      console.log("\n//The following is compiled code from template.");
-      console.log("//-----------------------------------------");
-      console.log("//------------- code start ----------------");
-      console.log                 (code);
-      console.log("//-------------- code end -----------------");
-      console.log("//-----------------------------------------\n\n");
+      var JSLINT = JSLINT || (umecob.node ? require("./fulljslint.js") : null);
+      if (JSLINT) {
+        var codes = code.split("\n");
+        var code4lint = new T();
+        var code4disp = new T();
+        for (var i in codes) {
+          if (! codes[i].match(/#JSLINT#/)) {
+            code4lint.add(codes[i]);
+          }
+        }
+        JSLINT(code4lint.join("\n"));
+        var linenum = JSLINT.errors[0].line + 1;
+        var len     = codes.length;
+
+        for (var i = Math.max(linenum - 6, 0); i < Math.min(linenum + 6, len); i++) { 
+          code4disp.add( (i == linenum -1 ? "*" : "") +  (parseInt(i)+1) + "\t"+codes[i]);
+        }
+        console.log(e.message || e);
+        console.log(JSLINT.errors[0].reason+" at line " + linenum + " (evaled code below.)");
+        console.log(umecob.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
+      } else {
+
+      }
       return e.message || e;
     }
 
@@ -625,8 +670,8 @@ umecob.compiler("standard", (function() {
     this.buffer.clear();
   });
 
-  umecob.Error.messages("COMPILER_STANDARD_UNKNOWN_STATE", function(){ "State error: Unknown state '"+ arguments[0] +"' was given."});
-  umecob.Error.messages("COMPILER_STANDARD_QUOTATION", function(){ "Syntax error: you have to close quotation [" + arguments[0] +"']."});
+  umecob.Error.messages("COMPILER_STANDARD_UNKNOWN_STATE", function(){ "State error: Unknown state '"+ arguments[1] +"' was given."});
+  umecob.Error.messages("COMPILER_STANDARD_QUOTATION", function(){ "Syntax error: you have to close quotation [" + arguments[1] +"']."});
   umecob.Error.messages("COMPILER_STANDARD_CLOSE_TAG", "Syntax error: you have to close [% tag with %] tag.");
           
   return C;
@@ -635,3 +680,4 @@ umecob.compiler("standard", (function() {
 } catch (e) {
   console.log(e.stack || e.message || e);
 }
+
