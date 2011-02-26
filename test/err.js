@@ -1,4 +1,4 @@
-var umecob = require("./umecob.js")
+var umecob = require("../umecob.js")
 
 function argMistake() {
   umecob("template", "file")
@@ -48,5 +48,12 @@ function invalidFileName() {
   .next(function(result){ console.log(result)})
 }
 //invalidFileName()
+
+
+function syntaxError01() {
+  umecob.use("file")({tpl_id: "test/tpls/syntax_error01.tpl", data: {title: "title"}})
+  .next(function(result){ console.log(result)})
+}
+syntaxError01()
 
 
