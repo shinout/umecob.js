@@ -32,6 +32,9 @@ function load(lang) {
     next(function(html) {
       $("body").html(html)
     })
+  }).
+  error(function(e) {
+    console.log(e)
   })
 }
 

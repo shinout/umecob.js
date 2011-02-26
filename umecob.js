@@ -1,9 +1,17 @@
 try {
 
 function umecob(st) {
-  if (typeof st == "object") 
-     return umecob[st.sync ? "sync" : "async"](st || {})
-  throw umecob.Error("UMECOB_ARG")
+  try {
+    if (typeof st != "object") 
+      throw umecob.Error("UMECOB_INVALID_ARGUMENT")
+    var ret = umecob[st.sync ? "sync" : "async"](st || {})
+    return ( ret instanceof Deferred) 
+      ? ret.error(function(e){ console.log(e.stack || e.message || e)})
+      : ret
+  } catch (e) {
+    console.log(e.stack || e.message || e)
+    return (st.sync || false) ? (e.message || e) : new Deferred.call(function() {return e.message || ""})
+  }
 }
 
 /** adding features to umecob. U is equal to umecob object. **/
@@ -11,6 +19,9 @@ function umecob(st) {
 
   /** Global Preferences of umecob.binding and umecob.compiler **/
   var Preferences = { binding  : "default", compiler : "standard" }
+
+  function checkTemplateType(tpl) { return (typeof tpl == "string") || (function(){throw U.Error("UMECOB_INVALID_TEMPLATE", typeof tpl) })()}
+  function checkDataType(data) { return (typeof data == "object") || (function(){throw U.Error("UMECOB_INVALID_DATA", typeof data) })()}
 
   U.node = (typeof exports === "object" && this === exports)
 
@@ -38,13 +49,11 @@ function umecob(st) {
           : Deferred.call(function(){return {} })
     }).next( function(val) {
       st.tpl    = st.tpl || val.tpl
+      st.code   = st.code ||  ( checkTemplateType(st.tpl) ? compiler.compile(st.tpl) : "")
       st.data   = st.data || val.data || {}
-      st.code   = st.code || compiler.compile(st.tpl)
-      st.result = st.result || compiler.run(st.code, st.data)
+      st.result = st.result || ( checkDataType(st.data) ? compiler.run(st.code, st.data) : {})
       U.end(st)
       return st.result
-    }).error( function(e) {
-      console.log(e.stack || e.message || e)
     })
   }
 
@@ -58,9 +67,9 @@ function umecob(st) {
     st.binding  = st.binding  || binding.name
     st.compiler = st.compiler || compiler.name
     st.tpl    = st.tpl || binding.getTemplate.sync(st.tpl_id)
+    st.code   = st.code ||  ( checkTemplateType(st.tpl) ? compiler.compile(st.tpl) : "")
     st.data   = st.data || ( (st.data_id) ? binding.getData.sync(st.data_id) : {})
-    st.code   = st.code || compiler.compile(st.tpl)
-    st.result = st.result || compiler.run(st.code, st.data, true)
+    st.result = st.result || ( checkDataType(st.data) ? compiler.run(st.code, st.data, true) : {})
     U.end(st)
     return st.result
   }
@@ -161,7 +170,7 @@ function umecob(st) {
         checkIdType(id)
         return impl.getAsync(id).next(function(data) {
           return (typeof data == "string") ? jsonize(data) : data
-        }) 
+        })
       }
     }
   }
@@ -193,7 +202,8 @@ function umecob(st) {
     var name = arguments[0],
            e = new Error()
     e.message = (typeof umecob.Error.messages[name] == "undefined") 
-        ? "Unspecified internal error occurred in umecob. If you have something to ask, "+
+        ? "("+arguments[0] + ") " +
+          "Unspecified internal error occurred in umecob. If you have something to ask, "+
           "please feel free to send me an e-mail: shinout310 at gmail.com (Shin Suzuki)."
         : (typeof umecob.Error.messages[name] == "function")
           ? umecob.Error.messages[name].apply(this, arguments )
@@ -210,7 +220,9 @@ function umecob(st) {
       U.Error.messages[arguments[0]] = arguments[1]
   }
 
-  U.Error.messages("UMECOB_ARG", "umecob() requires one object argument. See README for detail of the argument.")
+  U.Error.messages("UMECOB_INVALID_ARGUMENT", "umecob() requires one object argument. See README for detail of the argument.")
+  U.Error.messages("UMECOB_INVALID_TEMPLATE", function(){ return "The typeof 'tpl' has to be 'string', '"+ arguments[1] +"' is given."})
+  U.Error.messages("UMECOB_INVALID_DATA", function(){ return "The typeof 'data' has to be 'object', '"+ arguments[1] +"' is given."})
   U.Error.messages("DEFERRED_NOTFOUND", "If you use umecob() asynchronously, you have to include \"JSDeferred\" library."+
                                          " Go to https://github.com/cho45/jsdeferred then download it.")
   U.Error.messages("EV_NOTFOUND", function(){ return "Event '"+arguments[1]+"' is not found."})
@@ -219,7 +231,7 @@ function umecob(st) {
   U.Error.messages("BINDING_NOTFOUND", function() { return "Binding '"+ arguments[1] +"' is not found."})
   U.Error.messages("BINDING_INVALID_ARGUMENT", "Invalid number of arguments in umecob.binding(). It requires at most 2 arguments.")
   U.Error.messages("BINDING_NO_IMPL", "The 'default' binding doesn't support fetching templates and data by id. " + U.Error.messages("BINDING_USE"))
-  U.Error.messages("FRAME_INVALID_ID", function() { return "The type of tpl_id and data_id should be 'string'. '"+ arguments[1] +"' is given."})
+  U.Error.messages("FRAME_INVALID_ID", function() { return "The type of tpl_id and data_id have be 'string', '"+ arguments[1] +"' is given."})
   U.Error.messages("COMPILER_NOTFOUND", function() { return "Compiler '"+ arguments[1] +"' is not found."})
   U.Error.messages("COMPILER_INVALID_ARGUMENT", "Invalid number of arguments in umecob.compiler(). It requires at most 2 arguments.")
 
@@ -245,6 +257,7 @@ umecob.binding("file", (function(T) {
       try {
         return fs.readFileSync((id.substr(0,1) == "/")? id : path + id, "utf-8")
       } catch (e) {
+        console.log("BINDINGERROR")
         console.log(e.stack || e.message || e)
         return e.message || e
       }
@@ -255,9 +268,7 @@ umecob.binding("file", (function(T) {
         return str
       })
       fs.readFile((id.substr(0,1) == "/")? id : path + id, "utf-8", function(e, str){
-        if (e) 
-          throw e
-        d.call.call(d, str)
+        (e) ? d.fail.call(d, e) : d.call.call(d, str)
       })
       return d
     }

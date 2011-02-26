@@ -1,20 +1,51 @@
 var umecob = require("./umecob.js")
 
 function argMistake() {
-  // commonly mistaken problem
   umecob("template", "file")
+  .next(function(result){ console.log(result)})
 }
 //argMistake()
 
+function invalidBinding() {
+  umecob.use("flie")
+}
+invalidBinding()
+
+
 function invalidMethod() {
-  // umecob method name not found
   umecob.user("file")
 }
 //invalidMethod()
 
 
-function invalidType() {
-  // umecob method name not found
-  umecob.use("file")({tpl_id: "hoge", data_id: {title: "title"}})
+function invalidDataIdType() {
+  umecob.use("file")({tpl: "hoge", data_id: {title: "title"}})
+  .next(function(result){ console.log(result)})
 }
-invalidType()
+//invalidDataIdType()
+
+function invalidTplIdType() {
+  umecob.use("file")({tpl_id: {}, data: {title: "title"}})
+  .next(function(result){ console.log(result)})
+}
+//invalidTplIdType()
+
+function invalidDataType() {
+  umecob.use("file")({tpl: "template", data: '{title: "title"}'})
+  .next(function(result){ console.log(result)})
+}
+//invalidDataType()
+
+function invalidTplType() {
+  umecob.use("file")({tpl: {}, data: {title: "title"}})
+  .next(function(result){ console.log(result)})
+}
+//invalidTplType()
+
+function invalidFileName() {
+  umecob.use("file")({tpl_id: "hoge", data: {title: "title"}})
+  .next(function(result){ console.log(result)})
+}
+//invalidFileName()
+
+
