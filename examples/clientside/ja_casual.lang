@@ -1,5 +1,8 @@
 { 
   title                 : "やっぱりumecob.jsっしょ",
+  sample                : "う、うめこぶだと。",
+  usingJQ               : "jQuery使えます？",
+  hereIs                : function(i) { return "ここが例の#result"+i+"。"},
   chooseLang            : "どの言葉で見る？",
   menu                  : "めぬー",
   synchronousSample     : "とりあえず!",

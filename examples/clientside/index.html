@@ -2,13 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="stylesheet" href="reset.css" />
-<link rel="stylesheet" href="style.css" />
+<link type="text/css" rel="stylesheet" href="reset.css" />
+<link type="text/css" rel="stylesheet" href="style.css" />
+<link type="text/css" rel="stylesheet" href="prettify/prettify.css" />
 <title>umecob.js</title>
+<script type="text/javascript" src="prettify/prettify.js"></script>
 <script type="text/javascript" src="../../jsdeferred.js"></script>
+<script type="text/javascript" src="../../fulljslint.js"></script>
 <script type="text/javascript" src="../../umecob.js"></script>
 <script type="text/javascript" src="jquery-1.4.2.min.js"></script>
 <script type="text/javascript">
+setInterval(function(){
+  prettyPrint();
+}, 600);
+
 umecob.codes = {}
 umecob.start( function(u) {
   u.code = umecob.codes[u.tpl_id] || null

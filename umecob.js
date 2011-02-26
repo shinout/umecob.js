@@ -142,7 +142,7 @@ function umecob(st) {
         str = "("+str+")";
         return eval(str);
       } catch (e) {
-        var JSLINT = JSLINT || (umecob.node ? require("./fulljslint.js") : null);
+        JSLINT = JSLINT || (umecob.node ? require("./fulljslint.js") : null);
         if (JSLINT) {
           var codes = str.split("\n");
           JSLINT(str);
@@ -248,6 +248,8 @@ function umecob(st) {
   U.Error.messages("DEFERRED_NOTFOUND", "If you use umecob() asynchronously, you have to include \"JSDeferred\" library."+
                                          " Go to https://github.com/cho45/jsdeferred then download it.");
   U.Error.messages("EV_NOTFOUND", function(){ return "Event '"+arguments[1]+"' is not found."});
+  U.Error.messages("JSLINT_REQUIRED", "Error occurred during eval(). If you want to see details of the error, please request " +
+                                      'JSLINT.  e.g. <script type="text/javascript" src="/path/to/umecob/fulljslint.js"></script>');
   U.Error.messages("SHOW_CODE", function(){ 
     return "\n\n//------------------------------------//\n" +
            "//-------------- start ---------------//\n" +
@@ -470,7 +472,7 @@ umecob.compiler("standard", (function() {
     try {
       return eval(code);
     } catch (e) {
-      var JSLINT = JSLINT || (umecob.node ? require("./fulljslint.js") : null);
+      JSLINT = JSLINT || (umecob.node ? require("./fulljslint.js") : null);
       if (JSLINT) {
         var codes = code.split("\n");
         var code4lint = new T();
@@ -491,7 +493,8 @@ umecob.compiler("standard", (function() {
         console.log(JSLINT.errors[0].reason+" at line " + linenum + " (evaled code below.)");
         console.log(umecob.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
       } else {
-
+          console.log(umecob.Error("JSLINT_REQUIRED"));
+          console.log(e.stack || e.message || e);
       }
       return e.message || e;
     }

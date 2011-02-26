@@ -1,5 +1,8 @@
 { 
   title                 : "umecob.js examples",
+  sample                : "Oh, it's simple!",
+  usingJQ               : "using jQuery",
+  hereIs                : function(i) { return "Here is #result"+i},
   chooseLang            : "Choose Language",
   menu                  : "example list",
   synchronousSample     : "call synchronously",
