@@ -68,29 +68,55 @@ sectionize("Synchronous umecob has done.");
  *   The path has to be :
  *            absolute path ( begins with '/')
  *                  or
- *            relative path from umecob.js
+ *            relative path from 'umecob.js'. Not from the running script!!
  *  
  **********************/
-
 
 /* asynchronous */
 umecob.use("file")({tpl_id: "examples/node/file_async.tpl", data: {title: "Asynchronous call of umecob", list: {key1: "val1", key2: "val2"}}  })
 .next(function(result) {
   console.log(result);
-  sectionize();
+  sectionize("filesystem fetching finished.");
 });
-
-
-
-
-
 
 /* synchronous */
 var result = umecob.use("file")({sync: true, tpl_id: "examples/node/file_sync.tpl", data: {name: "ya", method: "Synchronous"}  })
 console.log(result);
-sectionize();
+sectionize("filesystem fetching finished.");
 
 
-
-
+/*** what is umecob.use() ??  ***
+ *
+ * umecob.use(binding);
+ *
+ * param binding : 
+ *     (string) binding name you want to use.
+ *              umecob.js prepares 5 bindings: file, url, jquery, xhr and default.
+ *              default is 'default' binding and this cannot fetch templates or data from given tpl_id, data_id.
+ *              Other four bindings are as belows.
+ *
+ *
+ *      file:   use 'fs' module. for node.js.
+ *      url:    use 'http' module. for node.js.
+ *      jquery: use jQuery.ajax(). for client.
+ *      xhr:    use XmlHttpRequet || ActiveXObject. for client.
+ *
+ *   Also, you can create your own binding ( explains later)
+ *
+ *   Once you call umecob.use(binding), 
+ *   you don't need to call it again unless you want to change binding.
+ *   This means umecob.use() is GLOBAL SETTING in umecob.
+ *   When you'd like to use binding for specific use, you can call umecob() like 
+ *
+ *         umecob({ binding: "url", tpl_id: "/path/to/template", data: {E: "mc^2"}  });
+ *                   ^
+ *                  HERE.  This setting is prior to global setting via umecob.use().
+ *
+ *
+ * return : (function) umecob.
+ *          so you can write like  umecob.use("my_own_binding")({tpl_id:"hoge", data_id:"fuga", sync: false})  
+ *                                                            ^^ 
+ *                                                          connecting 
+ *                                                          
+ **********************/
 
