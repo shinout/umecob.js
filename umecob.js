@@ -436,7 +436,7 @@ umecob.compiler("standard", (function() {
           codeBuffer : new T() };
 
     state.codeBuffer.add("try{ ");
-    state.codeBuffer.add(" with (json) { // this line has to be removed when passing to #JSLINT#");
+    state.codeBuffer.add(" with (echo.data) { // this line has to be removed when passing to #JSLINT#");
 
     while ( state.name ) {
       state.name = trans[state.name] 
@@ -452,13 +452,14 @@ umecob.compiler("standard", (function() {
     return state.codeBuffer.join("\n");
   };
 
-  C.run = function(code, json, sync) {
+  C.run = function(code, data, sync) {
     var buff = new T();
     var echo = function(txt) {
       buff.add(txt);
     };
 
     echo.sync = sync || false;
+    echo.data = data;
     echo.defers = {};
 
     echo.addDefer = function(d) {
