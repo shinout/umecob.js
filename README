@@ -1,7 +1,12 @@
 #!you
-alert(" Hello ");
-alert(" Thanks for reading README of umecob.js ");
-alert(" This file is NOT script AT ALL !! ");
+alert(" Hello!"                                  +
+      " Thanks for reading README of umecob.js " + 
+      " This file is NOT script AT ALL !! "      +
+      " For quick reference,  see examples."     );
+
+if (! how_to_write_template) {
+    see examples/template_sample.txt
+}
 
 
 if ( your_interest ==  "node.js") {
@@ -41,3 +46,4 @@ if ( you.browsers.length == 1 && you.browsers[0] == "IE" ) {
       you.browsers.push( recommended_browsers[i] );
     }
 }
+
