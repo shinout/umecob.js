@@ -18,7 +18,9 @@ function umecob(st) {
 ( function(U) {
 
   /** Global Preferences of umecob.binding and umecob.compiler **/
-  var Preferences = { binding  : "default", compiler : "standard" };
+  var Preferences = { 
+    binding  : "default", 
+    compiler : "standard"};
   function common_start(st) {
     U.start(st);
     st.binding_obj  = U.binding(st.binding || null);
@@ -72,16 +74,33 @@ function umecob(st) {
 
   // eventの管理
   function ev(name) {
+    Preferences[name] = {};
+    var i = 0;
     return function() {
+      // Event registration
       if (typeof arguments[0] == "function" ) {
-        Preferences[name] = arguments[0];
+        Preferences[name][arguments[1] || i++] = arguments[0];
+        return U;
+      } 
+      else if (arguments.length == 2 && typeof arguments[1] == "function") {
+        Preferences[name][arguments[0] || i++] = arguments[1];
         return U;
       }
-      else if (typeof arguments[0] == "object" && typeof arguments[0][name] == "function"){
-        return arguments[0][name].apply(this, arguments);
+
+      // Event Deletion
+      else if (typeof arguments[0] != "object" && typeof Preferences[name][arguments[0]] == "function") {
+        delete Preferences[name][arguments[0]];
       }
-      else if (typeof Preferences[name] == "function"){
-        return Preferences[name].apply(this, arguments);
+
+      // Event execution
+      else {
+        for (var j in Preferences[name]) {
+          Preferences[name][j].apply(this, arguments);
+        }
+        // object event
+        if (typeof arguments[0] == "object" && typeof arguments[0][name] == "function"){
+          arguments[0][name].apply(this, arguments);
+        }
       }
     }
   }
