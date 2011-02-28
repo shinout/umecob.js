@@ -1,16 +1,16 @@
 try {
 
-function umecob(st) {
+function umecob(u) {
   try {
-    if (typeof st != "object") 
+    if (typeof u != "object") 
       throw umecob.Error("UMECOB_INVALID_ARGUMENT");
-    var ret = umecob[st.sync ? "sync" : "async"](st || {});
+    var ret = umecob[u.sync ? "sync" : "async"](u || {});
     return (ret instanceof Deferred)
       ? ret.error(function(e){ console.log(e.stack || e.message || e)})
       : ret;
   } catch (e) {
     console.log(e.stack || e.message || e);
-    return (st.sync || false) ? (e.message || e) : new Deferred.call(function() {return e.message || "";});
+    return (u.sync || false) ? (e.message || e) : new Deferred.call(function() {return e.message || "";});
   }
 }
 
@@ -21,55 +21,55 @@ function umecob(st) {
   var Preferences = { 
     binding  : "default", 
     compiler : "standard"};
-  function common_start(st) {
-    U.start(st);
-    st.binding_obj  = U.binding(st.binding || null);
-    st.compiler_obj = U.compiler(st.compiler || null);
-    st.binding      = st.binding  || st.binding_obj.name;
-    st.compiler     = st.compiler || st.compiler_obj.name;
+  function common_start(u) {
+    U.start(u);
+    u.binding_obj  = U.binding(u.binding || null);
+    u.compiler_obj = U.compiler(u.compiler || null);
+    u.binding      = u.binding  || u.binding_obj.name;
+    u.compiler     = u.compiler || u.compiler_obj.name;
   }
 
-  function common_end(st) {
+  function common_end(u) {
     function checkTemplateType(tpl) { return (typeof tpl == "string") || (function(){throw U.Error("UMECOB_INVALID_TEMPLATE", typeof tpl) })();}
     function checkDataType(data) { return (typeof data == "object") || (function(){throw U.Error("UMECOB_INVALID_DATA", typeof data) })();}
-    st.code   = st.code ||  ( checkTemplateType(st.tpl) ? st.compiler_obj.compile(st.tpl) : "");
-    st.result = st.result || ( checkDataType(st.data) ? st.compiler_obj.run(st.code, st.data, st.sync || false) : {});
-    U.end(st);
-    return st.result;
+    u.code   = u.code ||  ( checkTemplateType(u.tpl) ? u.compiler_obj.compile(u.tpl) : "");
+    u.result = u.result || ( checkDataType(u.data) ? u.compiler_obj.run(u.code, u.data, u.sync || false) : {});
+    U.end(u);
+    return u.result;
   }
 
   U.node = (typeof exports === "object" && this === exports);
 
   // asynchronized umecob. returns Deferred Object.
-  U.async = function(st) {
+  U.async = function(u) {
     if (typeof Deferred === "undefined") 
       throw U.Error("DEFERRED_NOTFOUND");
 
-    common_start(st);
+    common_start(u);
 
     return Deferred.parallel({
-      tpl: ( st.tpl || st.code || st.result)
-        ? Deferred.call(function(){return st.tpl})
-        : st.binding_obj.getTemplate.async(st.tpl_id),
+      tpl: ( u.tpl || u.code || u.result)
+        ? Deferred.call(function(){return u.tpl})
+        : u.binding_obj.getTemplate.async(u.tpl_id),
 
-      data: st.data 
-        ? Deferred.call(function(){return st.data})
-        : (st.data_id) 
-          ? st.binding_obj.getData.async(st.data_id)
+      data: u.data 
+        ? Deferred.call(function(){return u.data})
+        : (u.data_id) 
+          ? u.binding_obj.getData.async(u.data_id)
           : Deferred.call(function(){return {} })
     }).next( function(val) {
-      st.tpl    = st.tpl || val.tpl;
-      st.data   = st.data || val.data || {};
-      return common_end(st);
+      u.tpl    = u.tpl || val.tpl;
+      u.data   = u.data || val.data || {};
+      return common_end(u);
     });
   }
 
   // umecobの同期版
-  U.sync = function(st) {
-    common_start(st);
-    st.tpl    = st.tpl || st.binding_obj.getTemplate.sync(st.tpl_id);
-    st.data   = st.data || ( (st.data_id) ? st.binding_obj.getData.sync(st.data_id) : {});
-    return common_end(st);
+  U.sync = function(u) {
+    common_start(u);
+    u.tpl    = u.tpl || u.binding_obj.getTemplate.sync(u.tpl_id);
+    u.data   = u.data || ( (u.data_id) ? u.binding_obj.getData.sync(u.data_id) : {});
+    return common_end(u);
   }
 
   // eventの管理

@@ -1,8 +1,75 @@
-#!you
-alert(" Hello!"                                  +
-      " Thanks for reading README of umecob.js " + 
-      " This file is NOT script AT ALL !! "      +
-      " For quick reference,  see examples."     );
+# umecob.js = {
+#
+#
+# name        : umecob.js
+# version     : 1.0   
+# license     : MIT License
+#
+# named after :       "UMEKOMU", which means "embed" in Japanese, and "UMECOB-CHA", which is a name of Japanese tea ( I have NEVER had ).
+#
+# description :        a simple JavaScript template engine working on both clientside and node.js, 
+#                      supporting both synchronous and asynchronous uses.
+#
+# sample template   :  [% var username = "shinout"; %] 
+#                      Hello, [%=username%]! // Hello, shinout!
+#                      [% {tpl: "sample.tpl", data_id:"/data.json" } %]  // use partial template
+# 
+# sample JavaScript :  var result = umecob({ tpl: "[%=hoge%]", data: {hoge: "synchronous use!"}, sync: true});
+#                                             ^                  ^                                ^ 
+#                                           template string     data passed to template         synchronous use.
+#                      console.log(result); // synchronous use!
+#
+#                      umecob({ tpl: "[%=hoge%]", data: {hoge: "asynchronous use!"}})
+#                      .next( function(result) {
+#                        console.log(result); // asynchronous use! 
+#                      });
+# 
+# =============== THAT'S ALL, BUT THERE ARE A LOT OF EXTENDED USES. =====================
+# =======================================================================================
+# 
+# 
+# use with XHR?             : true.          umecob.use("xhr")({tpl_id: "/url/to/template", data_id: "/url/to/data"});
+# use with jQuery ajax?     : OfCourse       umecob.use("jquery")({tpl_id: "/url/to/template", data_id: "/url/to/data"});
+# handle files in node.js?  : absolutely!    umecob.use("file")({tpl_id: "/path/to/template", data_id: "/path/to/data"});
+# handle url in node.js?    : Why not?       umecob.use("url")({tpl_id: "http://externalsite_is_ok/", data_id: "http://use_json_web_service?cool"});
+#
+# use other binding?        : sure. call umecob.binding() and you can register your own bindings. 
+#
+# omit complex path, .ext?  : modify this => umecob.start("some_name", function(u) { u.tpl_id = "/absorute/path/to/viewfiles/" + u.tpl_id + ".html" });
+#
+# cache?                    : modify belows. 
+#                             var db = {};
+#                             umecob.start("some_name2", function(u) {
+#                               if ( db[u.tpl_id] ) {
+#                                 u.code = db[u.tpl_id];
+#                               }
+#                             }).end("some_name3", function(u) {
+#                               db[u.tpl_id] = u.code;
+#                             });
+#
+# change tag style?         : Sorry.... but if you write another compiler, the answer would be YES.
+#                             umecob.js has umecob.compiler() method, and you can change its internal compiler.
+#
+# }
+#
+# umecob.js.author = {
+#   name    :  SHIN Suzuki
+#   twitter :  shinout
+#   github  :  shinout
+#   myspace :  shinout
+#   mail    :  shinout310@gmail.com
+#   country :  Japan.Kanagawa.Yokohama.rural
+#   editor  :  vim
+#   OS      :  Mac OS X
+#   married :  false
+# }
+#
+
+alert(" Hello!"                                    +
+      " Thanks for reading README of umecob.js "   + 
+      " These code below is NOT script AT ALL !! " +
+      " For quick reference,  see examples."       );
+
 
 if (! how_to_write_template) {
     see examples/template_sample.txt
