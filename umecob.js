@@ -340,10 +340,16 @@ umecob.binding("url", (function(T) {
       http.get({
         host: op.hostname || "localhost",
         port: op.port || 80,
-        path: ( (op.pathname.slice(0,1) == "/") ? "" : "/" ) + op.pathname + (op.search || "")
+        path: ( op.pathname 
+                ? (op.pathname.slice(0,1) == "/") 
+                  ? "" 
+                  : "/" + op.pathname + (op.search || "") 
+                : "")
       }, function(res){
         res.on("data", function(chunk) {
           result += chunk.toString();
+        }).on("error", function(e){
+          d.fail.call(d,e);
         }).on("end", function(){
           d.call.call(d, result);
         });

@@ -120,3 +120,23 @@ sectionize("filesystem fetching finished.");
  *                                                          
  **********************/
 
+/*** use URL ***
+ *
+ * umecob.use("url")(u);
+ *
+ * param u : object  
+ *    tpl_id :  (string) template file url.
+ *    data_id:  (string) data url.
+ *
+ *   The path has to be :
+ *            absolute path ( begins with '/')
+ *                  or
+ *            relative path from 'umecob.js'. Not from the running script!!
+ *  
+ **********************/
+ umecob.use("url")({tpl_id: "http://nodejs.org/docs/v0.4.1/api/http.html"})
+ .next(function(result) {
+   console.log(result);
+   sectionize("Fetched from node.js");
+ });
+

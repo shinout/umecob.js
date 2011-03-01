@@ -32,7 +32,7 @@ How to write template?
 
 2.2 output with function "echo"
 
-    [% echo(price + "yen? It's too expensive!"); %] // 35000 yen? It's too expensive!
+    [% echo(price + " yen? It's too expensive!"); %] // 35000 yen? It's too expensive!
 
 
 
@@ -68,7 +68,7 @@ How to write template?
 4. use partial in templates
 4.1 use [% { } %]
 
-    [%{ tpl_id: "/path/to/template", data_id: "/path/to/data" }%] // This code will converted to the rendered result processed by umecob()
+    [%{ tpl_id: "/path/to/template", data_id: "/path/to/data" }%] // This code will be converted to the rendered result processed by umecob()
 
     ( start with '[%{' and end with '}%]'.
       You don't need to care if the internal umecob() is synchronous or asynchronous. )
@@ -117,7 +117,7 @@ How to write template?
 
 
 7.2 use echo.data
-  see 2.2
+  see 3.2
 
 
 7.3 other echo APIs
