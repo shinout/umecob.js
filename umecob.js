@@ -16,29 +16,38 @@ function umecob(u) {
 
 /** adding features to umecob. U is equal to umecob object. **/
 ( function(U) {
+  U.node = (typeof exports === "object" && this === exports);
 
   /** Global Preferences of umecob.binding and umecob.compiler **/
   var Preferences = { 
-    binding  : "default", 
-    compiler : "standard"};
+    binding  : {tpl: "default", data: "default"},
+    compiler : "standard",
+    start    : {},
+    end      : {}
+  };
+
   function common_start(u) {
     U.start(u);
-    u.binding_obj  = U.binding(u.binding || null);
+    if (typeof u.binding == "object") {
+      u.tpl_binding  = U.binding(u.binding.tpl  || Preferences.binding.tpl);
+      u.data_binding = U.binding(u.binding.data || Preferences.binding.data);
+    } else {
+      u.tpl_binding  = U.binding(u.binding  || Preferences.binding.tpl);
+      u.data_binding = U.binding(u.binding  || Preferences.binding.data);
+    }
     u.compiler_obj = U.compiler(u.compiler || null);
-    u.binding      = u.binding  || u.binding_obj.name;
+    u.binding      = { tpl: u.tpl_binding.name, data: u.data_binding.name };
     u.compiler     = u.compiler || u.compiler_obj.name;
   }
 
   function common_end(u) {
     function checkTemplateType(tpl) { return (typeof tpl == "string") || (function(){throw U.Error("UMECOB_INVALID_TEMPLATE", typeof tpl) })();}
     function checkDataType(data) { return (typeof data == "object") || (function(){throw U.Error("UMECOB_INVALID_DATA", typeof data) })();}
-    u.code   = u.code ||  ( checkTemplateType(u.tpl) ? u.compiler_obj.compile(u.tpl) : "");
-    u.result = u.result || ( checkDataType(u.data) ? u.compiler_obj.run(u.code, u.data, u.sync || false) : {});
+    u.code   = u.code ||  (checkTemplateType(u.tpl) ? u.compiler_obj.compile(u.tpl) : "");
+    u.result = u.result || (checkDataType(u.data) ? u.compiler_obj.run(u.code, u.data, u.sync || false) : {});
     U.end(u);
     return u.result;
   }
-
-  U.node = (typeof exports === "object" && this === exports);
 
   // asynchronized umecob. returns Deferred Object.
   U.async = function(u) {
@@ -50,12 +59,12 @@ function umecob(u) {
     return Deferred.parallel({
       tpl: ( u.tpl || u.code || u.result)
         ? Deferred.call(function(){return u.tpl})
-        : u.binding_obj.getTemplate.async(u.tpl_id),
+        : u.tpl_binding.getTemplate.async(u.tpl_id),
 
       data: u.data 
         ? Deferred.call(function(){return u.data})
         : (u.data_id) 
-          ? u.binding_obj.getData.async(u.data_id)
+          ? u.data_binding.getData.async(u.data_id)
           : Deferred.call(function(){return {} })
     }).next( function(val) {
       u.tpl    = u.tpl || val.tpl;
@@ -67,75 +76,29 @@ function umecob(u) {
   // umecobの同期版
   U.sync = function(u) {
     common_start(u);
-    u.tpl    = u.tpl || u.binding_obj.getTemplate.sync(u.tpl_id);
-    u.data   = u.data || ( (u.data_id) ? u.binding_obj.getData.sync(u.data_id) : {});
+    u.tpl    = u.tpl || u.tpl_binding.getTemplate.sync(u.tpl_id);
+    u.data   = u.data || ( (u.data_id) ? u.tpl_binding.getData.sync(u.data_id) : {});
     return common_end(u);
   }
 
-  // eventの管理
-  function ev(name) {
-    Preferences[name] = {};
-    var i = 0;
-    return function() {
-      // Event registration
-      if (typeof arguments[0] == "function" ) {
-        Preferences[name][arguments[1] || i++] = arguments[0];
-        return U;
-      } 
-      else if (arguments.length == 2 && typeof arguments[1] == "function") {
-        Preferences[name][arguments[0] || i++] = arguments[1];
-        return U;
-      }
-
-      // Event Deletion
-      else if (typeof arguments[0] != "object" && typeof Preferences[name][arguments[0]] == "function") {
-        delete Preferences[name][arguments[0]];
-      }
-
-      // Event execution
-      else {
-        for (var j in Preferences[name]) {
-          Preferences[name][j].apply(this, arguments);
-        }
-        // object event
-        if (typeof arguments[0] == "object" && typeof arguments[0][name] == "function"){
-          arguments[0][name].apply(this, arguments);
-        }
-      }
-    }
-  }
-  U.start = ev("start");
-  U.end   = ev("end");
-
   U.use = function() {
-    if (arguments.length == 1) {
-
-      if (typeof arguments[0] == "object") {
-        Preferences.binding  = arguments[0].binding  || Preferences.binding;
-        Preferences.compiler = arguments[0].compiler || Preferences.compiler;
-
-      // string
-      } else {
-        Preferences.binding = arguments[0];
-      }
-    } 
-
-    else if (arguments.length == 2) {
-      Preferences.binding  = arguments[0];
-      Preferences.compiler = arguments[1];
+    if (typeof arguments[0] == "object") {
+      Preferences.binding  = (typeof arguments[0].binding == "object") 
+        ? arguments[0].binding 
+        : (typeof arguments[0].binding == "string")
+          ? {tpl: arguments[0].binding, data: arguments[0].binding}
+          : Preferences.binding;
+      Preferences.compiler     = arguments[0].compiler || Preferences.compiler;
+      Preferences.binding.tpl  = arguments[0].tpl      || Preferences.binding.tpl;
+      Preferences.binding.data = arguments[0].data     || Preferences.binding.data;
+    // string
+    } else {
+      Preferences.binding = {tpl: arguments[0], data: arguments[0]};
     }
     return U;
   };
 
   U.binding = function() {
-    if (arguments.length == 0 || !arguments[0]) {
-      return (Preferences.binding) 
-        ? U.binding(Preferences.binding) 
-        : (function(){
-            throw U.Error("BINDING_NO_DEFAULT");
-          })();
-    }
-
     if (arguments.length == 1) {
       return U.binding.impls[ arguments[0] ] || (function(name){ throw U.Error("BINDING_NOTFOUND", name);})(arguments[0]);
     }
@@ -146,7 +109,6 @@ function umecob(u) {
       U.binding.impls[arguments[0]] = arguments[1];
       return U.binding(arguments[0]);
     }
-
     throw U.Error("BINDING_INVALID_ARGUMENT");
   };
   U.binding.impls = U.binding.impls || {};
@@ -216,6 +178,41 @@ function umecob(u) {
     };
   };
   U.binding("default", new U.binding.Frame());
+
+  // hookの管理
+  function hook(name) {
+    Preferences[name] = {};
+    var i = 0;
+    return function() {
+      // Event registration
+      if (typeof arguments[0] == "function" ) {
+        Preferences[name][arguments[1] || i++] = arguments[0];
+        return U;
+      } 
+      else if (arguments.length == 2 && typeof arguments[1] == "function") {
+        Preferences[name][arguments[0] || i++] = arguments[1];
+        return U;
+      }
+
+      // Event Deletion
+      else if (typeof arguments[0] != "object" && typeof Preferences[name][arguments[0]] == "function") {
+        delete Preferences[name][arguments[0]];
+      }
+
+      // Event execution
+      else {
+        for (var j in Preferences[name]) {
+          Preferences[name][j].apply(this, arguments);
+        }
+        // object event
+        if (typeof arguments[0] == "object" && typeof arguments[0][name] == "function"){
+          arguments[0][name].apply(this, arguments);
+        }
+      }
+    }
+  }
+  U.start = hook("start");
+  U.end   = hook("end");
 
   U.compiler = function() {
     if (arguments.length == 0 || !arguments[0]) {
