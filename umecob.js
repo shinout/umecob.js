@@ -699,8 +699,8 @@ umecob.compiler("standard", (function() {
     this.buffer.clear();
   });
 
-  umecob.Error.messages("COMPILER_STANDARD_UNKNOWN_STATE", function(){ "State error: Unknown state '"+ arguments[1] +"' was given."});
-  umecob.Error.messages("COMPILER_STANDARD_QUOTATION", function(){ "Syntax error: you have to close quotation [" + arguments[1] +"']."});
+  umecob.Error.messages("COMPILER_STANDARD_UNKNOWN_STATE", function(){ return "State error: Unknown state '"+ arguments[1] +"' was given."});
+  umecob.Error.messages("COMPILER_STANDARD_QUOTATION", function(){ return "Syntax error: you have to close quotation [" + arguments[1] +"']."});
   umecob.Error.messages("COMPILER_STANDARD_CLOSE_TAG", "Syntax error: you have to close [% tag with %] tag.");
           
   return C;
