@@ -12,10 +12,6 @@
 <script type="text/javascript" src="../../umecob.js"></script>
 <script type="text/javascript" src="jquery-1.4.2.min.js"></script>
 <script type="text/javascript">
-setInterval(function(){
-  prettyPrint();
-}, 600);
-
 umecob.codes = {}
 umecob.start( function(u) {
   u.code = umecob.codes[u.tpl_id] || null
@@ -24,24 +20,38 @@ umecob.start( function(u) {
 })
 
 function load(lang) {
-  localStorage.lang = lang
-  load.lang = lang
-  Deferred.parallel({
+  var rand = String(Math.random()).replace(/\./, '');
+  localStorage.lang = lang;
+  load.lang = lang;
+
+  var deferred = Deferred.parallel({
     lang : umecob.binding("xhr").getData.async(lang + ".lang"),
     v    : umecob.binding("xhr").getData.async("sample.data"),
     esc  : umecob.binding("xhr").getData.async("htmlspecialchars.js")
   }).
   next(function(vals) {
-    vals.esc = eval(vals.esc)
+    vals.esc = eval(vals.esc);
     vals.i   = 0;
-    umecob.use("xhr")({tpl_id: "template.html", data: vals}).
-    next(function(html) {
-      $("body").html(html)
-    })
-  }).
-  error(function(e) {
-    console.log(e)
+    return vals;
+  });
+
+  umecob.use("xhr")({tpl_id: "template.html", data: deferred})
+  .next(function(result) {
+    result += '<div stle="display:none;" id="domFinishedTeller'+ rand+'"></div>';
+    $("body").html(result);
+    var colorize = setInterval(function(){
+      console.log("setInterval");
+      if ( $("#domFinishedTeller"+rand).size() ) {
+        prettyPrint();
+        console.log("clearInterval");
+        clearInterval(colorize);
+      }
+    }, 30);
   })
+  .error(function(e) {
+    console.log(e)
+  });
+
 }
 
 load(localStorage.lang || "en")
