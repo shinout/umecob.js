@@ -1,5 +1,3 @@
-try {
-
 function umecob(u) {
   try {
     if (typeof u != "object") 
@@ -58,17 +56,21 @@ function umecob(u) {
 
     return Deferred.parallel({
       tpl: ( u.tpl || u.code || u.result)
-        ? Deferred.call(function(){return u.tpl})
+        ? (u.tpl instanceof Deferred)
+          ? u.tpl
+          : Deferred.call(function(){return u.tpl})
         : u.tpl_binding.getTemplate.async(u.tpl_id),
 
       data: u.data 
-        ? Deferred.call(function(){return u.data})
+        ? (u.data instanceof Deferred)
+          ? u.data
+          : Deferred.call(function(){return u.data})
         : (u.data_id) 
           ? u.data_binding.getData.async(u.data_id)
           : Deferred.call(function(){return {} })
     }).next( function(val) {
-      u.tpl    = u.tpl || val.tpl;
-      u.data   = u.data || val.data || {};
+      u.tpl    = val.tpl;
+      u.data   = val.data || {};
       return common_end(u);
     });
   }
@@ -114,7 +116,7 @@ function umecob(u) {
   U.binding.impls = U.binding.impls || {};
 
   // bindingを作りやすくする骨格。
-  U.binding.Frame = function(impl) {
+  U.binding.Skeleton = function(impl) {
     impl = impl || { getSync: function(){ throw U.Error("BINDING_NO_IMPL");}, getAsync: function() { this.getSync(); }}
     var jsonize = function(str) {
       if ( str == "") 
@@ -177,7 +179,7 @@ function umecob(u) {
       }
     };
   };
-  U.binding("default", new U.binding.Frame());
+  U.binding("default", new U.binding.Skeleton());
 
   // hookの管理
   function hook(name) {
@@ -313,7 +315,7 @@ umecob.binding("file", (function(T) {
       return d
     }
   });
-})(new umecob.binding.Frame() ));
+})(new umecob.binding.Skeleton() ));
 
 
 // node.js url get binding
@@ -354,10 +356,10 @@ umecob.binding("url", (function(T) {
       return d;
     }
   });
-})(new umecob.binding.Frame()) );
+})(new umecob.binding.Skeleton()) );
 
 // jquery ajax binding
-umecob.binding("jquery", new umecob.binding.Frame({
+umecob.binding("jquery", new umecob.binding.Skeleton({
   getSync : function(id) {
     var str;
     jQuery.ajax({
@@ -422,7 +424,7 @@ umecob.binding("xhr", (function(T) {
       return d;
     }
   });
-})(new umecob.binding.Frame()) );
+})(new umecob.binding.Skeleton()) );
 
 /** umecob Compilers  **/
 // Standard Compiler
@@ -702,8 +704,3 @@ umecob.compiler("standard", (function() {
           
   return C;
 })());
-
-} catch (e) {
-  console.log(e.stack || e.message || e);
-}
-

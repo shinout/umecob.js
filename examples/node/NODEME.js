@@ -134,9 +134,46 @@ sectionize("filesystem fetching finished.");
  *            relative path from 'umecob.js'. Not from the running script!!
  *  
  **********************/
+ /*
  umecob.use("url")({tpl_id: "http://nodejs.org/docs/v0.4.1/api/http.html"})
  .next(function(result) {
    console.log(result);
    sectionize("Fetched from node.js");
  });
 
+*/
+
+/*** use different bindings between tpl and data ***
+ *
+ * umecob.use({tpl: t_binding, data: d_binding});
+ *
+ * param : object  
+ *    t_binding :  (string) binding name for template
+ *    d_binding :  (string) binding name for data
+ *  
+ **********************/
+/*
+umecob.use({tpl: "url", data: "file" })({tpl_id: "http://nodejs.org/docs/v0.4.1/api/http.html", data_id: "examples/node/included.data"})
+ .next(function(result) {
+   console.log(result);
+   sectionize("used different bindings");
+ });
+*/
+
+/*** pass Deferred object to tpl and/or data ***
+ *
+ * umecob({tpl: t_deferred, data: d_deferred});
+ *
+ * param : object  
+ *    t_deferred : (Deferred) Deferred object whose next-registered function returns template.
+ *    d_binding :  (Deferred) binding name for data whose next-registered function returns data.
+ *  
+ **********************/
+
+umecob({
+  tpl: Deferred.call(function(){ return "[%=hoge%]"; }),  
+  data: Deferred.call(function(){ return {hoge: "Hello, Deferred"}; })
+}).next(function(result){
+  console.log(result);
+  sectionize("pass Deferred.");
+});
