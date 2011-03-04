@@ -8,7 +8,7 @@ function umecob(u) {
       : ret;
   } catch (e) {
     console.log(e.stack || e.message || e);
-    return (u.sync || false) ? (e.message || e) : new Deferred.call(function() {return e.message || "";});
+    return (u.sync || false) ? (e.message || e) : new Deferred.call(function() {return e.message || e;});
   }
 }
 
@@ -41,8 +41,13 @@ function umecob(u) {
   function common_end(u) {
     function checkTemplateType(tpl) { return (typeof tpl == "string") || (function(){throw U.Error("UMECOB_INVALID_TEMPLATE", typeof tpl) })();}
     function checkDataType(data) { return (typeof data == "object") || (function(){throw U.Error("UMECOB_INVALID_DATA", typeof data) })();}
-    u.code   = u.code ||  (checkTemplateType(u.tpl) ? u.compiler_obj.compile(u.tpl) : "");
-    u.result = u.result || (checkDataType(u.data) ? u.compiler_obj.run(u.code, u.data, u.sync || false) : {});
+    u.code   = u.code ||  (checkTemplateType(u.tpl) ? u.compiler_obj.compile(u) : "");
+    if (typeof u.attach == "object") {
+      for (var i in u.attach) {
+        u.data[i] = u.attach[i];
+      }
+    }
+    u.result = u.result || (checkDataType(u.data) ? u.compiler_obj.run(u) : {});
     U.end(u);
     return u.result;
   }
@@ -117,39 +122,39 @@ function umecob(u) {
 
   // bindingを作りやすくする骨格。
   U.binding.Skeleton = function(impl) {
-    impl = impl || { getSync: function(){ throw U.Error("BINDING_NO_IMPL");}, getAsync: function() { this.getSync(); }}
-    var jsonize = function(str) {
+    function jsonize(str) {
       if ( str == "") 
         return {};
       try {
         str = "("+str+")";
         return eval(str);
       } catch (e) {
-        JSLINT = (typeof JSLINT == "function") ? JSLINT : (umecob.node ? require("./fulljslint.js") : null);
-        if (JSLINT) {
+        JSHINT = (typeof JSHINT == "function") ? JSHINT : (umecob.node ? require("./fulljslint.js") : null);
+        if (JSHINT) {
           var codes = str.split("\n");
-          JSLINT(str);
-          var linenum   = JSLINT.errors[0].line;
+          JSHINT(str);
+          var linenum   = JSHINT.errors[0].line;
           var len       = codes.length;
           var code4disp = new Array();
           for (var i = Math.max(linenum - 6, 0); i < Math.min(linenum + 6, len); i++) { 
             code4disp.push( (i == linenum -1 ? "*" : "") +  (parseInt(i)+1) + "\t"+codes[i]);
           }
           console.log(e.message || e);
-          console.log(JSLINT.errors[0].reason+" at line " + linenum + " (evaled code below.)");
+          console.log(JSHINT.errors[0].reason+" at line " + linenum + " (evaled code below.)");
           console.log(U.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
         } else {
-          console.log(U.Error("JSLINT_REQUIRED"));
+          console.log(U.Error("JSHINT_REQUIRED"));
           console.log(e.stack || e.message || e);
         }
         return {};
       }
-    };
-    var checkIdType = function(id) {
+    }
+    function checkIdType(id) {
       if (typeof id != "string") 
         throw U.Error("FRAME_INVALID_ID", typeof id);
-    };
+    }
 
+    impl = impl || { getSync: function(){ throw U.Error("BINDING_NO_IMPL");}, getAsync: function() { this.getSync(); }}
     this.impl = function(obj) { impl = obj; return this; };
 
     // bindingのインターフェイス1: getTemplate(id): return (string) template
@@ -236,7 +241,6 @@ function umecob(u) {
   }
   U.compiler.impls = U.compiler.impls || {};
 
-
   /** About Error **/
   U.Error = function() {
     var name = arguments[0],
@@ -266,8 +270,8 @@ function umecob(u) {
   U.Error.messages("DEFERRED_NOTFOUND", "If you use umecob() asynchronously, you have to include \"JSDeferred\" library."+
                                          " Go to https://github.com/cho45/jsdeferred then download it.");
   U.Error.messages("EV_NOTFOUND", function(){ return "Event '"+arguments[1]+"' is not found."});
-  U.Error.messages("JSLINT_REQUIRED", "Error occurred during eval(). If you want to see details of the error, please request " +
-                                      'JSLINT.  e.g. <script type="text/javascript" src="/path/to/umecob/fulljslint.js"></script>');
+  U.Error.messages("JSHINT_REQUIRED", "Error occurred during eval(). If you want to see details of the error, please request " +
+                                      'JSHINT.  e.g. <script type="text/javascript" src="/path/to/umecob/fulljslint.js"></script>');
   U.Error.messages("SHOW_CODE", function(){ 
     return "\n\n//------------------------------------//\n" +
            "//-------------- start ---------------//\n" +
@@ -431,7 +435,8 @@ umecob.binding("xhr", (function(T) {
 umecob.compiler("standard", (function() {
   var C = {};
 
-  C.compile = function(tpl) {
+  C.compile = function(u) {
+    var tpl = u.tpl;
     var tplArr = (typeof tpl === "string")  ? tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '') + '\0'.split("") : '\0',
         i      = 0,
         state  = {
@@ -441,7 +446,7 @@ umecob.compiler("standard", (function() {
           codeBuffer : new T() };
 
     state.codeBuffer.add("try{ ");
-    state.codeBuffer.add(" with (echo.data) { // this line has to be removed when passing to #JSLINT#");
+    state.codeBuffer.add(" with (echo.data) { // this line has to be removed when passing to #JSHINT#");
 
     while ( state.name ) {
       state.name = trans[state.name] 
@@ -450,21 +455,21 @@ umecob.compiler("standard", (function() {
     }
 
     state.codeBuffer.add("echo.getResult();");
-    state.codeBuffer.add("} // this line has to be removed when passing to #JSLINT#");
+    state.codeBuffer.add("} // this line has to be removed when passing to #JSHINT#");
     state.codeBuffer.add("}catch(e){");
-    state.codeBuffer.add("console.log(e.stack || e.message || e);");
-    state.codeBuffer.add("e.stack || e.message || e;}\n");
+    //state.codeBuffer.add("e.message || e;\n");
+    state.codeBuffer.add("throw e;}\n");
     return state.codeBuffer.join("\n");
   };
 
-  C.run = function(code, data, sync) {
+  C.run = function(u) {
     var buff = new T();
     var echo = function(txt) {
       buff.add(txt);
     };
 
-    echo.sync = sync || false;
-    echo.data = data;
+    echo.sync = u.sync || false;
+    echo.data = u.data;
     echo.defers = {};
 
     echo.addDefer = function(d) {
@@ -472,8 +477,8 @@ umecob.compiler("standard", (function() {
       buff.increment();
     };
 
-    echo.addUmecob = function(u) {
-      ( u instanceof Deferred) ? echo.addDefer(u) : echo(u);
+    echo.addUmecob = function(um) {
+      ( um instanceof Deferred) ? echo.addDefer(um) : echo(um);
     };
 
     echo.put = function(i, v) {
@@ -494,31 +499,56 @@ umecob.compiler("standard", (function() {
         : Deferred.parallel(echo.getDefers()).next( function(results) {for ( var i in results ){ echo.put(i,results[i]) } return echo.getText() });
     };
 
+
     try {
-      return eval(code);
+      return eval(u.code);
     } catch (e) {
-      JSLINT = (typeof JSLINT == "function") ? JSLINT : (umecob.node ? require("./fulljslint.js") : null);
-      if (JSLINT) {
-        var codes = code.split("\n");
+      echo.evalScope = function() {
+        with(echo.data) {
+          for (var i in this.errors) {
+            try{
+              console.log(this.errors[i].a);
+              var t = typeof eval(this.errors[i].a);
+            } catch(e) {
+              var t = "undefined";
+            }
+            if (t  === "undefined" ) {
+              return {
+                linenum : this.errors[i].line + 1,
+                reason  : this.errors[i].reason + 1
+              };
+            }
+          }
+        }
+        return false;
+      }
+
+      JSHINT = (typeof JSHINT == "function") ? JSHINT : (umecob.node ? require("./fulljslint.js") : null);
+      if (JSHINT) {
+        var codes = u.code.split("\n");
         var code4lint = new T();
         var code4disp = new T();
         for (var i in codes) {
-          if (! codes[i].match(/#JSLINT#/)) {
+          if (! codes[i].match(/#JSHINT#/)) {
             code4lint.add(codes[i]);
           }
         }
-        JSLINT(code4lint.join("\n"));
-        var linenum = JSLINT.errors[0].line + 1;
-        var len     = codes.length;
+        JSHINT(code4lint.join("\n"), {browser: true, undef: true, boss: true, evil: true, devel: true, asi: true});
+        var result = echo.evalScope.apply(JSHINT);
+        console.log(result);
+        var linenum = result ? result.linenum : 0;
+        var reason  = result ? result.reason  : "";
+        var len = codes.length;
 
         for (var i = Math.max(linenum - 6, 0); i < Math.min(linenum + 6, len); i++) { 
-          code4disp.add( (i == linenum -1 ? "*" : "") +  (parseInt(i)+1) + "\t"+codes[i]);
+          code4disp.add( (i == linenum -1 ? "*" : " ") +  (parseInt(i)+1) + "\t"+u.tpl.split("\n")[i]);
         }
         console.log(e.message || e);
-        console.log(JSLINT.errors[0].reason+" at line " + linenum + " (evaled code below.)");
+        console.log(u.tpl_id || "");
+        console.log(reason+" at line " + linenum + " (evaled code below.)");
         console.log(umecob.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
       } else {
-          console.log(umecob.Error("JSLINT_REQUIRED"));
+          console.log(umecob.Error("JSHINT_REQUIRED"));
           console.log(e.stack || e.message || e);
       }
       return e.message || e;

@@ -152,13 +152,11 @@ sectionize("filesystem fetching finished.");
  *    d_binding :  (string) binding name for data
  *  
  **********************/
-/*
 umecob.use({tpl: "url", data: "file" })({tpl_id: "http://nodejs.org/docs/v0.4.1/api/http.html", data_id: "examples/node/included.data"})
  .next(function(result) {
    console.log(result);
    sectionize("used different bindings");
  });
-*/
 
 /*** pass Deferred object to tpl and/or data ***
  *
