@@ -137,7 +137,7 @@ function umecob(u) {
         str = "("+str+")";
         return eval(str);
       } catch (e) {
-        JSHINT = (typeof JSHINT == "function") ? JSHINT : (umecob.node ? require("./fulljslint.js") : null);
+        JSHINT = (typeof JSHINT == "function") ? JSHINT : (umecob.node ? require("./jshint.js") : null);
         if (JSHINT) {
           var codes = str.split("\n");
           JSHINT(str);
@@ -284,7 +284,7 @@ function umecob(u) {
                                          " Go to https://github.com/cho45/jsdeferred then download it.");
   U.Error.messages("EV_NOTFOUND", function(){ return "Event '"+arguments[1]+"' is not found."});
   U.Error.messages("JSHINT_REQUIRED", "Error occurred during eval(). If you want to see details of the error, please request " +
-                                      'JSHINT.  e.g. <script type="text/javascript" src="/path/to/umecob/fulljslint.js"></script>');
+                                      'JSHINT.  e.g. <script type="text/javascript" src="/path/to/umecob/jshint.js"></script>');
   U.Error.messages("SHOW_CODE", function(){ 
     return "\n\n//------------------------------------//\n" +
            "//-------------- start ---------------//\n" +
@@ -516,7 +516,7 @@ umecob.compiler("standard", (function() {
     try {
       return eval(u.code);
     } catch (e) {
-      JSHINT = (typeof JSHINT == "function") ? JSHINT : (umecob.node ? require("./fulljslint.js") : null)
+      JSHINT = (typeof JSHINT == "function") ? JSHINT : (umecob.node ? require("./jshint.js") : null)
       if (!JSHINT) {
         console.log(umecob.Error("JSHINT_REQUIRED"));
         console.log(e.message || e);
