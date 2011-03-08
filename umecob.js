@@ -2,12 +2,17 @@ function umecob(u) {
   try {
     if (typeof u != "object") 
       throw umecob.Error("UMECOB_INVALID_ARGUMENT");
+    umecob.start(u);
     var ret = umecob[u.sync ? "sync" : "async"](u || {});
     return (ret instanceof Deferred)
-      ? ret.error(function(e){ console.log(e.stack || e.message || e)})
+      ? ret.error(function(e){
+        console.log(e.stack || e.message || e)
+        console.log((u.name)? "Error occurred in "+u.name : umecob.Error.messages("UMECOB_SET_NAME"));
+      })
       : ret;
   } catch (e) {
     console.log(e.stack || e.message || e);
+    console.log((u.name)? "Error occurred in "+u.name : umecob.Error.messages("UMECOB_SET_NAME"));
     return (u.sync || false) ? (e.message || e) : new Deferred.call(function() {return e.message || e;});
   }
 }
@@ -25,7 +30,6 @@ function umecob(u) {
   };
 
   function common_start(u) {
-    U.start(u);
     if (typeof u.binding == "object") {
       u.tpl_binding  = U.binding(u.binding.tpl  || Preferences.binding.tpl);
       u.data_binding = U.binding(u.binding.data || Preferences.binding.data);
@@ -46,7 +50,11 @@ function umecob(u) {
       for (var i in u.attach) {
         u.data[i] = u.attach[i];
       }
+    } else if (typeof u.attach == "function") {
+      var ret = u.attach(u.data);
+      u.data = (ret) ? ret : u.data;
     }
+
     u.result = u.result || (checkDataType(u.data) ? u.compiler_obj.run(u) : {});
     U.end(u);
     return u.result;
@@ -144,7 +152,7 @@ function umecob(u) {
           console.log(U.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
         } else {
           console.log(U.Error("JSHINT_REQUIRED"));
-          console.log(e.stack || e.message || e);
+          console.log(e.message || e);
         }
         return {};
       }
@@ -190,8 +198,8 @@ function umecob(u) {
   function hook(name) {
     Preferences[name] = {};
     var i = 0;
-    return function() {
-      // Event registration
+    var ret = function() {
+      // registration
       if (typeof arguments[0] == "function" ) {
         Preferences[name][arguments[1] || i++] = arguments[0];
         return U;
@@ -201,22 +209,25 @@ function umecob(u) {
         return U;
       }
 
-      // Event Deletion
-      else if (typeof arguments[0] != "object" && typeof Preferences[name][arguments[0]] == "function") {
-        delete Preferences[name][arguments[0]];
-      }
-
-      // Event execution
+      // execution
       else {
         for (var j in Preferences[name]) {
           Preferences[name][j].apply(this, arguments);
         }
-        // object event
+        // attached hook 
         if (typeof arguments[0] == "object" && typeof arguments[0][name] == "function"){
           arguments[0][name].apply(this, arguments);
         }
       }
     }
+    ret.del = function() {
+      // Deletion
+      if(typeof arguments[0] == "string" && typeof Preferences[name][arguments[0]] == "function") {
+        delete Preferences[name][arguments[0]];
+        console.log(name + " hook '" + arguments[0] + "' was deleted."); 
+      }
+    };
+    return ret;
   }
   U.start = hook("start");
   U.end   = hook("end");
@@ -264,6 +275,8 @@ function umecob(u) {
       U.Error.messages[arguments[0]] = arguments[1];
   };
 
+  U.Error.messages("UMECOB_SET_NAME", "umecob Notice: If you want to know which umecob() threw this error, call umecob with 'name' option." +
+                   "  e.g.  umecob({name: 'sample_name', tpl_id: 'hoge' }); ");
   U.Error.messages("UMECOB_INVALID_ARGUMENT", "umecob() requires one object argument. See README for detail of the argument.");
   U.Error.messages("UMECOB_INVALID_TEMPLATE", function(){ return "The typeof 'tpl' has to be 'string', '"+ arguments[1] +"' is given."});
   U.Error.messages("UMECOB_INVALID_DATA", function(){ return "The typeof 'data' has to be 'object', '"+ arguments[1] +"' is given."});
@@ -445,20 +458,20 @@ umecob.compiler("standard", (function() {
           stack      : new T(),
           codeBuffer : new T() };
 
-    state.codeBuffer.add("try{ ");
     state.codeBuffer.add(" with (echo.data) { // this line has to be removed when passing to #JSHINT#");
 
-    while ( state.name ) {
-      state.name = trans[state.name] 
-        ? trans[state.name].call(state, tplArr[i++]) 
-        : (function(){ throw umecob.Error("COMPILER_STANDARD_UNKNOWN_STATE");})();
+    try {
+      while ( state.name ) {
+        state.name = trans[state.name] 
+          ? trans[state.name].call(state, tplArr[i++]) 
+          : (function(){ throw umecob.Error("COMPILER_STANDARD_UNKNOWN_STATE");})();
+      }
+    } catch (e) {
+      console.log(e + "  in  " + (u.tpl_id || u.tpl || u.code));
     }
 
     state.codeBuffer.add("echo.getResult();");
     state.codeBuffer.add("} // this line has to be removed when passing to #JSHINT#");
-    state.codeBuffer.add("}catch(e){");
-    //state.codeBuffer.add("e.message || e;\n");
-    state.codeBuffer.add("throw e;}\n");
     return state.codeBuffer.join("\n");
   };
 
@@ -503,19 +516,24 @@ umecob.compiler("standard", (function() {
     try {
       return eval(u.code);
     } catch (e) {
+      JSHINT = (typeof JSHINT == "function") ? JSHINT : (umecob.node ? require("./fulljslint.js") : null)
+      if (!JSHINT) {
+        console.log(umecob.Error("JSHINT_REQUIRED"));
+        console.log(e.message || e);
+      }
+
       echo.evalScope = function() {
         with(echo.data) {
           for (var i in this.errors) {
             try{
-              console.log(this.errors[i].a);
               var t = typeof eval(this.errors[i].a);
             } catch(e) {
               var t = "undefined";
             }
             if (t  === "undefined" ) {
               return {
-                linenum : this.errors[i].line + 1,
-                reason  : this.errors[i].reason + 1
+                line    : this.errors[i].line,
+                reason  : this.errors[i].reason
               };
             }
           }
@@ -523,35 +541,66 @@ umecob.compiler("standard", (function() {
         return false;
       }
 
-      JSHINT = (typeof JSHINT == "function") ? JSHINT : (umecob.node ? require("./fulljslint.js") : null);
-      if (JSHINT) {
-        var codes = u.code.split("\n");
-        var code4lint = new T();
-        var code4disp = new T();
-        for (var i in codes) {
-          if (! codes[i].match(/#JSHINT#/)) {
-            code4lint.add(codes[i]);
-          }
-        }
-        JSHINT(code4lint.join("\n"), {browser: true, undef: true, boss: true, evil: true, devel: true, asi: true});
-        var result = echo.evalScope.apply(JSHINT);
-        console.log(result);
-        var linenum = result ? result.linenum : 0;
-        var reason  = result ? result.reason  : "";
-        var len = codes.length;
-
-        for (var i = Math.max(linenum - 6, 0); i < Math.min(linenum + 6, len); i++) { 
-          code4disp.add( (i == linenum -1 ? "*" : " ") +  (parseInt(i)+1) + "\t"+u.tpl.split("\n")[i]);
-        }
-        console.log(e.message || e);
-        console.log(u.tpl_id || "");
-        console.log(reason+" at line " + linenum + " (evaled code below.)");
-        console.log(umecob.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
-      } else {
-          console.log(umecob.Error("JSHINT_REQUIRED"));
-          console.log(e.stack || e.message || e);
+      function getTplName(u) {
+        return u.tpl_id || ((typeof u.tpl == "string") 
+            ? "template :  >>> " + u.tpl.substr(0, 50).replace(/\n/g, " ") + "...  "
+            : "compiled code: >>> " + u.code.substr(76, 50).replace(/\n/g, " ")
+        );
       }
-      return e.message || e;
+
+      var codes = u.code.split("\n"),
+          code4lint = new T(),
+          code4disp = new T();
+
+      for (var i in codes) {
+        if (! codes[i].match(/#JSHINT#/)) {
+          code4lint.add(codes[i]);
+        }
+      }
+
+      JSHINT(code4lint.join("\n"), {browser: true, undef: true, boss: true, evil: true, devel: true, asi: true});
+      result = echo.evalScope.apply(JSHINT)
+      if (!result) {
+        console.log(e.message || e);
+        console.log("Something is wrong with "+ getTplName(u));
+        return e.message || e;
+      }
+
+      if (!u.tpl) {
+        var k = Math.max(result.line - 10, 0);
+        var limit = Math.min(code4lint.getIndex(), result.line + 10);
+        while(k < limit) {
+          code4disp.add( (k == result.line -1 ? "*" : " ") +  (parseInt(k)+1) + "\t"+code4lint.get(k));
+          k++;
+        }
+        var err = result.reason + "   in  " + getTplName(u) + "  at line " + result.line;
+        console.log(err);
+        console.log(umecob.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
+        console.log(e.message || e);
+        return result.reason;
+      }
+
+      var line = result.line;
+      var j = 0; // read line [j+1] of the code passed to JSHINT
+      while (j < result.line) {
+        if (code4lint.get(j).slice(0,6) == 'echo("') {
+          var m = code4lint.get(j).split("\\\\n").join("").match(/\\n/g);
+          line += (m) ? m.length -1 : 0;
+        }
+        j++;
+      }
+      var tplines = u.tpl.split("\n");
+      var k = Math.max(line - 10, 0);
+      var limit = Math.min(tplines.length, line + 10);
+      while(k < limit) {
+        code4disp.add( (k == line -1 ? "*" : " ") +  (parseInt(k)+1) + "\t"+tplines[k]);
+        k++;
+      }
+      var err = result.reason + "   in  " + getTplName(u) + "  at line " + line  + " (in compiled code line "+ result.line +")";
+      console.log(err);
+      console.log(umecob.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
+      console.log(e);
+      return result.reason;
     }
 
   };
@@ -589,6 +638,16 @@ umecob.compiler("standard", (function() {
     }
   };
 
+  // %] が出た状態。次に改行コードが出てきたら無視
+  trans["FINISH_JS"] = function(c) {
+    switch (c) {
+      case '\n':
+        return "START";
+      default:
+        return trans["START"].call(this, c);
+    }
+  };
+
   // [ が出た状態
   trans["JS_PRE_START"] = function(c) {
     switch (c) {
@@ -617,8 +676,10 @@ umecob.compiler("standard", (function() {
           this.buffer.add(c);
           return stateName;
         case '\0':
-          throw umecob.Error("COMPILER_STANDARD_QUOTATION", type);
           return null;
+          // throw umecob.Error("COMPILER_STANDARD_QUOTATION", type);
+        case '\n':
+          return this.stack.pop();
       }
     };
   }
@@ -635,7 +696,7 @@ umecob.compiler("standard", (function() {
         this.buffer.add(c);
         return this.stack.pop();
       default:
-        this.buffer.add('\\'+c);
+        this.buffer.add('\\\\'+c);
         return this.stack.pop();
     }
   };
@@ -690,7 +751,7 @@ umecob.compiler("standard", (function() {
       switch (c) {
         case ']':
           fn.apply(this);
-          return "START";
+          return "FINISH_JS"
         default:
           this.buffer.add("%"+c);
           return mainStateName;
@@ -730,7 +791,7 @@ umecob.compiler("standard", (function() {
 
   umecob.Error.messages("COMPILER_STANDARD_UNKNOWN_STATE", function(){ return "State error: Unknown state '"+ arguments[1] +"' was given."});
   umecob.Error.messages("COMPILER_STANDARD_QUOTATION", function(){ return "Syntax error: you have to close quotation [" + arguments[1] +"']."});
-  umecob.Error.messages("COMPILER_STANDARD_CLOSE_TAG", "Syntax error: you have to close [% tag with %] tag.");
+  umecob.Error.messages("COMPILER_STANDARD_CLOSE_TAG", "Syntax error: you have to close '[%' tag with '%]' tag.");
           
   return C;
 })());
