@@ -17,10 +17,6 @@
 </nav>
 
 <section id="main">
-
-
-
-
 <section class="example" id="synchronous">
 <h1>[%=lang.synchronousSample %]</h1>
 <dl>
@@ -56,27 +52,32 @@ function result[%=i%]() {
 <section class="example" id="embed-variables">
 <h1>[%=lang.showJSVariables %]</h1>
 <dl>
-
 <dt>code</dt>
 <dd class="code">
-<pre>
-<code>[%=esc('umecob({tpl: "<p>\[%=var01 %], \[%=var02 %]!!</p>",  data: {var01: "Hello", var02: "World"} })')%]</code>
+<pre class="prettyprint" id="code[%=++i%]">
+var span_tpl  = '[%=esc('<span class="\[%=classname %]">\[%=val %]</span>')%]';
+var span_data = {classname: "sample-list", val: "[%=lang.sample%]"};
+var span = umecob({tpl: span_tpl, data: span_data, sync: true});
+$("#result[%=i%]").html(span); // [%=lang.usingJQ %]
 </pre>
 </dd>
 
 <dt>result</dt>
-<dd class="result" id="result[%=++i%]">
+<dd class="result" id="result[%=i%]">
+[%=lang.hereIs(i) %]
 <script type="text/javascript">
 function result[%=i%]() {
-  umecob({tpl: "<p>\[%=var01 %], \[%=var02 %]!!</p>",  data: {var01: "Hello", var02: "World"} }).
-  next(function(result) {
-    $("#result[%=i%]").html(result)
-  })
+  console.log("JIJI");
+  eval( $("#code[%=i%]").text() );
 }
 </script>
 <button onclick="result[%=i%]()">[%=lang.run %]</button>
 </dd>
 </dl>
+
+
+
+
 </section>
 
 

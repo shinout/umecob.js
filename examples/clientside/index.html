@@ -30,12 +30,11 @@ function load(lang) {
     esc  : umecob.binding("xhr").getData.async("htmlspecialchars.js")
   }).
   next(function(vals) {
-    vals.esc = eval(vals.esc);
     vals.i   = 0;
     return vals;
   });
 
-  umecob.use("xhr")({tpl_id: "template.html", data: deferred})
+  umecob.use("xhr")({tpl_id: "template.html", data: deferred, attach: function(data) {data.esc = eval(data.esc)} })
   .next(function(result) {
     result += '<div stle="display:none;" id="domFinishedTeller'+ rand+'"></div>';
     $("body").html(result);

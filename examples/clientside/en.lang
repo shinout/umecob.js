@@ -3,7 +3,7 @@
   sample                : "Oh, it's simple!",
   usingJQ               : "using jQuery",
   hereIs                : function(i) { return "Here is #result"+i},
-  chooseLang            : "Choose Language",
+  chooseLang            : "Choose a language",
   menu                  : "example list",
   synchronousSample     : "call synchronously",
   showJSVariables       : "Show JavaScript variables",

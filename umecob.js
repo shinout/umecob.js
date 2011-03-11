@@ -520,6 +520,7 @@ umecob.compiler("standard", (function() {
       if (!JSHINT) {
         console.log(umecob.Error("JSHINT_REQUIRED"));
         console.log(e.message || e);
+        return;
       }
 
       echo.evalScope = function() {
