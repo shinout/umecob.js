@@ -600,7 +600,7 @@ umecob.compiler("standard", (function() {
       var err = result.reason + "   in  " + getTplName(u) + "  at line " + line  + " (in compiled code line "+ result.line +")";
       console.log(err);
       console.log(umecob.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
-      console.log(e);
+      console.log(e.message || e);
       return result.reason;
     }
 
