@@ -23,6 +23,29 @@ How to write template?
     %]
 
 
+1.4 embed with other delimiters
+    By default, you can choose three types of delimiters.
+    1. standard: [%  and  %]
+    2. php     : <?  and  ?>  (<?php is not supported. only short open tag)
+    3. jsp     : <%  and  %>
+
+    Specify the compiler name as belows.
+    umecob.use({compiler: 'jsp'});
+      or 
+    umecob.preset('hogehoge', {compiler: 'php'});
+    umecob({preset: 'hogehoge'});
+      or
+    umecob({use: {compiler: 'standard'}});
+
+
+1.5 change delimiter to your own.
+    If you wanna use '<{' and '}>'
+    umecob.compiler('asYouLike', Umecob.compiler('<', '{', '}', '>');
+    Currently, you cannot change delimiter length ("two" and "two").
+    However, if you implement compiler, you can register it with
+      umecob.compiler('yourCompilerName', your_compiler_obj);
+
+
 2. show variables
 2.1 output with [%= %]
 

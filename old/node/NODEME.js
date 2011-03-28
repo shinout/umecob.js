@@ -1,5 +1,6 @@
 /*** use umecob.js  ***/
 var umecob = require("../../umecob.js");
+var Deferred = umecob.Deferred;
 
 function sectionize(msg) { 
   console.log("\n==================== "+ (msg || "") +" ======================"); 
