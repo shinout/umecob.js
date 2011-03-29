@@ -1,20 +1,21 @@
 How to write template?
+======================
 
 
-1. embed JavaScript Code
-1.1 embed with [% %]
+##1. embed JavaScript Code
+###1.1 embed with [% %]
 
     [% var smartPhones = ["iPhone", "Android"]; %] ( start with '[%' and end with '%]' )
 
 
-1.2 of course we can use any JavaScript code
+###1.2 of course we can use any JavaScript code
 
     [% for (var i in smartPhones) { %]
     I want to get [%=smartPhones[i]%]
     [% } %]
 
 
-1.3 support multilines
+###1.3 support multilines
 
     [% 
     if (Math.random() >= 0.5) {
@@ -23,7 +24,7 @@ How to write template?
     %]
 
 
-1.4 embed with other delimiters
+###1.4 embed with other delimiters
     By default, you can choose three types of delimiters.
     1. standard: [%  and  %]
     2. php     : <?  and  ?>  (<?php is not supported. only short open tag)
@@ -38,7 +39,7 @@ How to write template?
     umecob({use: {compiler: 'standard'}});
 
 
-1.5 change delimiter to your own.
+###1.5 change delimiter to your own.
     If you wanna use '<{' and '}>'
     umecob.compiler('asYouLike', Umecob.compiler('<', '{', '}', '>');
     Currently, you cannot change delimiter length ("two" and "two").
@@ -46,31 +47,31 @@ How to write template?
       umecob.compiler('yourCompilerName', your_compiler_obj);
 
 
-2. show variables
-2.1 output with [%= %]
+##2. show variables
+###2.1 output with [%= %]
 
     [% var price = 35000; %]
     [%=price %] (  start with '[% = ' and end with '%]'. No need to add semicolon. )
 
 
-2.2 output with function "echo"
+###2.2 output with function "echo"
 
     [% echo(price + " yen? It's too expensive!"); %] // 35000 yen? It's too expensive!
 
 
 
-3. use passed variables.
-3.1 see sample
+##3. use passed variables.
+###3.1 see sample
 
-  Following is a sample data passed to this template.
+Following is a sample data passed to this template.
 
     {
-      val  : "Apple",
-      arr  : ["UME" ,"cob" , "JS", 0.1],
+      val  : "apple",
+      arr  : ["ume" ,"cob" , "js", 0.1],
       nest : { "hoge": ["fuga", { hello: "world"}]}
     }
 
-  Then, you can use these variables as follows.
+then, you can use these variables as follows.
 
     [%= val + "  and Microsoft"%] // Apple and Microsoft
 
@@ -81,71 +82,77 @@ How to write template?
     [% = nest.hoge[1].hello %] // world
 
 
-3.2 use whole data with "echo.data"
+###3.2 use whole data with "echo.data"
 
-  echo.data is equal to the passed object.
+echo.data is equal to the passed object.
 
     [% = echo.data.val %] // Apple
 
 
-4. use partial in templates
-4.1 use [% { } %]
+##4. use partial in templates
+###4.1 use [% { } %]
 
     [%{ tpl_id: "/path/to/template", data_id: "/path/to/data" }%] // This code will be converted to the rendered result processed by umecob()
 
-    ( start with '[%{' and end with '}%]'.
-      You don't need to care if the internal umecob() is synchronous or asynchronous. )
+start with '[%{' and end with '}%]'.
+You don't need to care if the internal umecob() is synchronous or asynchronous. )
 
 
-4.2 call umecob synchronously in [%= %]
+###4.2 call umecob synchronously in [%= %]
 
-    [% = umecob({ tpl_id: "/path/to/template", data_id: "/path/to/data", sync: true }) %] 
+    [% = echo.umecob({ tpl_id: "/path/to/template", data_id: "/path/to/data", sync: true }) %] 
 
-    ( if you call umecob() synchronously, it returns result processed by umecob() )
+    // if you call umecob() synchronously, it returns result processed by umecob() 
+
+By default, echo.umecob() is the same as umecob().
+If you call umecob function like 
+    umecob({umecob: other_umecob});
+Then echo.umecob === other_umecob
+
+###4.3 call umecob Asynchronously in [%@ %]
+
+    [%@ echo.umecob({ tpl_id: "/path/to/template", data_id: "/path/to/data", sync: false}) %] 
+
+    //if you call umecob() asynchronously, 
+    //it returns Deferred object. Then use [%@ %] to get a value which the registered next() function returns.
 
 
-4.3 call umecob Asynchronously in [%@ %]
+##5. use Deferred Object
+see also 4.3
 
-    [%@ umecob({ tpl_id: "/path/to/template", data_id: "/path/to/data", sync: false}) %] 
+Provide there's a function which returns Deferred object.
 
-    ( if you call umecob() asynchronously, 
-      it returns Deferred object. Then use [%@ %] to get a value which the registered next() function returns. )
-
-
-5. use Deferred Object
-  see also 4.3
-
-  Suppose there's a function which returns Deferred object.
-
-  function umecobWrapper() {
-    // do something
-    return umecob({ tpl_id: "/path/to/template", data_id: "/path/to/data"})
-  }
+    function umecobWrapper() {
+      // do something
+      return umecob({ tpl_id: "/path/to/template", data_id: "/path/to/data"})
+    }
 
     [%@ umecobWrapper() %]  //This code will converted to the result processed by umecob().
 
 
 
-6. escape [% %]
+##6. escape [% %]
 
     \[%= hoge %] // this is not parsed.
 
 
-7. reserved variables
-  "echo" is the only variable reserved in the template parsing scope.
+##7. reserved variables
+"echo" is the only variable reserved in the template parsing scope.
 
 
-7.1 use echo()
-  see 2.2
+###7.1 use echo()
+see 2.2
 
 
-7.2 use echo.data
-  see 3.2
+###7.2 use echo.data
+see 3.2
 
+###7.3 use echo.umecob()
+see 4.2
 
-7.3 other echo APIs
-  There are several methods and properties in "echo",
-  but they are for internal use and you don't need to know them.
+###7.4 other echo APIs
+There are several methods and properties in "echo",
+but they are for internal use and you don't need to know them.
 
     echo.sync :  (boolean) whether this tempate is parsed synchronously or not.
     echo.defers: (object)
@@ -155,4 +162,3 @@ How to write template?
     echo.getDefers: (function)
     echo.getText: (function)
     echo.getResult: (function)
-
