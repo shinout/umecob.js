@@ -95,8 +95,8 @@ JavaScript テンプレートエンジン
 
     umecob({
       use: {binding: {tpl: 'file', data: 'url'}, start: ['modify_id001'], end: ['show_code001']}
-      tpl_id: 'hogefuga', // 
-      data_id: '&id=32&name=piyo', // 
+      tpl_id: 'hogefuga', // /var/www/hogefuga.net/tpls/hogefuga.htmlに変換されます
+      data_id: '&id=32&name=piyo', // http://example.com/apis/q?format=json&id=32&name=piyoに変換されます
     }).next(function(result) {
       // do something.
     });
@@ -181,16 +181,16 @@ JavaScript テンプレートエンジン
 
 ### Umecob オブジェクト ###
 #### staticな値を取得 ####
-console.log(Umecob.version); // バージョン
-console.log(Umecob.node); // boolean. Node.jsかどうか
+    console.log(Umecob.version); // バージョン
+    console.log(Umecob.node); // boolean. Node.jsかどうか
 
 #### create new umecob instance ####
-var my_umecob = Umecob('hogefuga'); // id : hogefuga のumecobインスタンスを新たに生成
+    var my_umecob = Umecob('hogefuga'); // id : hogefuga のumecobインスタンスを新たに生成
 
-var annonymous_umecob = Umecob(); // id : new Date().getTime().toString() のumecobインスタンスを新たに生成
+    var annonymous_umecob = Umecob(); // id : new Date().getTime().toString() のumecobインスタンスを新たに生成
 
-var reuse_umecob = Umecob('hogefuga');
-console.log(reuse_umecob === my_umecob); // true
+    var reuse_umecob = Umecob('hogefuga');
+    console.log(reuse_umecob === my_umecob); // true
 
 
 ### 引数のオプション ###

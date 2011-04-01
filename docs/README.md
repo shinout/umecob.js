@@ -95,8 +95,8 @@ Overview
 
     umecob({
       use: {binding: {tpl: 'file', data: 'url'}, start: ['modify_id001'], end: ['show_code001']}
-      tpl_id: 'hogefuga', // 
-      data_id: '&id=32&name=piyo', // 
+      tpl_id: 'hogefuga', // converted to /var/www/hogefuga.net/tpls/hogefuga.html
+      data_id: '&id=32&name=piyo', // converted to http://example.com/apis/q?format=json&id=32&name=piyo
     }).next(function(result) {
       // do something.
     });
@@ -181,16 +181,16 @@ Advanced Use
 
 ### Umecob object ###
 #### Get Static Values ####
-console.log(Umecob.version); // version
-console.log(Umecob.node); // boolean. is Node.js or not.
+    console.log(Umecob.version); // version
+    console.log(Umecob.node); // boolean. is Node.js or not.
 
 #### create new umecob instance ####
-var my_umecob = Umecob('hogefuga'); // new umecob function with id : hogefuga
+    var my_umecob = Umecob('hogefuga'); // new umecob function with id : hogefuga
 
-var annonymous_umecob = Umecob(); // new umecob function with id : new Date().getTime().toString()
+    var annonymous_umecob = Umecob(); // new umecob function with id : new Date().getTime().toString()
 
-var reuse_umecob = Umecob('hogefuga');
-console.log(reuse_umecob === my_umecob); // true
+    var reuse_umecob = Umecob('hogefuga');
+    console.log(reuse_umecob === my_umecob); // true
 
 
 ### Argument Options ###
