@@ -15,10 +15,15 @@ Overview
 ----------------
 ### Installation ###
     git clone git://github.com/shinout/umecob.js.git
+      OR
+    npm install umecob
+
 
 ### Preparation ###
 #### Server Side ####
     var umecob = require("/path/to/umecob/umecob.js");
+      OR
+    var umecob = require("umecob"); // if you've installed via npm
 
 #### Client Side ####
     <script type="text/javascript" src="/path/to/umecob/jsdeferred.js"></script><!-- for asynchronous use -->

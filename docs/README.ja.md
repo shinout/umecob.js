@@ -15,10 +15,15 @@ JavaScript テンプレートエンジン
 ----------------
 ### インストール方法 ###
     git clone git://github.com/shinout/umecob.js.git
+      または
+    npm install umecob
+
 
 ### 準備 ###
 #### サーバーサイド ####
     var umecob = require("/path/to/umecob/umecob.js");
+      または
+    var umecob = require("umecob"); // npmでインストールした場合
 
 #### クライアントサイド ####
     <script type="text/javascript" src="/path/to/umecob/jsdeferred.js"></script><!-- for asynchronous use -->
