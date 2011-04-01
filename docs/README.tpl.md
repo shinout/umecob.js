@@ -181,16 +181,16 @@ ${advanced}
 
 ### Umecob ${object} ###
 #### ${getStaticValues} ####
-console.log(Umecob.version); // ${version}
-console.log(Umecob.node); // boolean. ${isNodeOrNot}
+    console.log(Umecob.version); // ${version}
+    console.log(Umecob.node); // boolean. ${isNodeOrNot}
 
 #### create new umecob instance ####
-var my_umecob = Umecob('hogefuga'); // ${createNewUmecob('hogefuga')}
+    var my_umecob = Umecob('hogefuga'); // ${createNewUmecob('hogefuga')}
 
-var annonymous_umecob = Umecob(); // ${createNewUmecob('new Date().getTime().toString()')}
+    var annonymous_umecob = Umecob(); // ${createNewUmecob('new Date().getTime().toString()')}
 
-var reuse_umecob = Umecob('hogefuga');
-console.log(reuse_umecob === my_umecob); // true
+    var reuse_umecob = Umecob('hogefuga');
+    console.log(reuse_umecob === my_umecob); // true
 
 
 ### ${argumentOptions} ###

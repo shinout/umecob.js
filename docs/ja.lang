@@ -20,7 +20,7 @@
   customizing       : 'カスタマイズ',
   changeDelimiter   : 'デリミタの変更',
   registerHook      : '実行開始時、終了時のHookを登録',
-  convertedTo       : function(url){'converted to ' + url;},
+  convertedTo       : function(url){return url + 'に変換されます';},
   advanced          : 'さらなる使い方',
   template          : 'テンプレート',
   'function'        : '関数',

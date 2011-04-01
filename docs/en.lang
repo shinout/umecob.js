@@ -20,7 +20,7 @@
   customizing       : 'Customizing',
   changeDelimiter   : 'Change Delimiters',
   registerHook      : 'Register "start" hook, "end" hook',
-  convertedTo       : function(url){'converted to ' + url;},
+  convertedTo       : function(url){return 'converted to ' + url;},
   advanced          : 'Advanced Use',
   template          : 'Template',
   'function'        : 'function',
