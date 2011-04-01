@@ -586,7 +586,7 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
         ? "template :  >>> " + params.tpl.substr(0, 50).replace(/\n/g, " ") + "...  "
         : "compiled code: >>> " + params.code.substr(76, 50).replace(/\n/g, " "));
 
-      var hint = Umecob.Error.JSHINT(code4lint.join("\n"), {browser: true, undef: true, boss: true, evil: true, devel: true, asi: true}, e);
+      var hint = Umecob.Error.JSHINT(code4lint.join("\n"), {maxerr: 10000000, browser: true, undef: true, boss: true, evil: true, devel: true, asi: true}, e);
       if (!hint) {return e.message || e;}
       var result = Umecob.evalScope.call(hint, echo);
       if (!result) {

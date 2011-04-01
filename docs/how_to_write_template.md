@@ -53,8 +53,12 @@ How to write template?
     [% var price = 35000; %]
     [%=price %] (  start with '[% = ' and end with '%]'. No need to add semicolon. )
 
+###2.2 use ${}
+    ${hoge} is equal to [%= %]
 
-###2.2 output with function "echo"
+    <p id="${val.id}">${val.text}</p>
+
+###2.3 output with function "echo"
 
     [% echo(price + " yen? It's too expensive!"); %] // 35000 yen? It's too expensive!
 
