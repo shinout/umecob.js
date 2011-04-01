@@ -1,4 +1,4 @@
-umecob.js 1.1.0
+umecob.js 1.1.1
 ==========
 JavaScript Template Engine.
 

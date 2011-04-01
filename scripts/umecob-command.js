@@ -4,7 +4,12 @@ var datafile = process.argv[3];
 
 umecob.start('f', function(p) {
   p.tpl_id  = __dirname + '/../' + p.tpl_id;
-  p.data_id = __dirname + '/../' + p.data_id;
+  if (p.data_id) {
+    p.data_id = __dirname + '/../' + p.data_id;
+  }
+  else {
+    p.data = {};
+  }
 });
 
 umecob.compiler('f', umecob.Umecob.compiler('<','<','>','>'));
