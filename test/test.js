@@ -113,8 +113,11 @@ var fu = Umecob("file");
 fu.use("file")
 fu.use({compiler: 'php'})
 .start('file', function(params){
-  params.tpl_id = 'test/tpls/' + params.tpl_id + '.html';
-  params.data_id = 'test/data/' + params.data_id + '.data';
+  if (params.tpl_id) { params.tpl_id = 'test/tpls/' + params.tpl_id + '.html';
+  }
+  if (params.data_id) {
+    params.data_id = 'test/data/' + params.data_id + '.data';
+  }
 });
 var result = fu({sync: true, tpl_id: "smpl1", data_id: "smpl1"});
 console.log(result);
@@ -141,4 +144,61 @@ urlcob({tpl_id: "sample.tpl", data_id: "date.js", attach: function(data){
   test('ok', result.match(/キャッシュ/), 'rendered incorectly');
   test('result', 'url binding');
 });
+
+
+/* umecob syntax1 quotation */
+var result = fu({sync: true, tpl_id: "dq"});
+console.log(result);
+test('equal', result, "double [%quotation%] 'test'\'\"", 'rendered incorectly');
+var result = fu({sync: true, tpl_id: "sq"});
+console.log(result); test('equal', result, 'single quotation \n\n\n\n"test"\'\"', 'rendered incorectly');
+test('result', 'quotation test');
+
+/* umecob syntax2 comment */
+fu.end('showcode', function(params) {
+  console.log(params.code);
+}, false);
+//var result = fu({use: {end: 'showcode'}, sync: true, tpl_id: "comment"});
+var result = fu({sync: true, tpl_id: "comment"});
+console.log(result);
+test('equal', result, "A\nB\nC", 'rendered incorectly');
+test('result', 'comment test');
+
+
+
+/* umecob syntax3 short echo */
+var data = {hoge: {key: 'kkk', val: 'vvvvv'}};
+var result = fu({sync: true, tpl_id: "short_echo", data: data});
+console.log(result);
+test('equal', result, '<p id="kkk">vvvvv</p>\nhoge', 'rendered incorectly');
+test('result', 'short echo test');
+
+
+/* umecob template error log */
+var result = fu({sync: true, tpl_id: "error01" });
+test('ok', result.match(/at line 4\./), 'incorect line number of error');
+
+var result = fu({sync: true, tpl_id: "error02" });
+test('ok', result.match(/at line 7\./), 'incorect line number of error');
+
+fu({tpl_id: "error03" })
+.next(function(result) {
+  test('ok', result.match(/at line 17\./), 'incorect line number of error');
+  var outerscope = "outer";
+  return fu({tpl_id: "error05"});
+})
+.next(function(result) {
+  test('ok', result.match(/at line 3\./), 'incorect line number of error');
+  return fu({tpl_id: "error06"});
+})
+.next(function(result) {
+  test('ok', result.match(/at line 2\./), 'incorect line number of error');
+  test('result', 'short echo async test');
+});
+
+
+var result = fu({sync: true, tpl_id: "error04" });
+test('ok', result.match(/at line 1\./), 'incorect line number of error');
+test('result', 'short echo test');
+
 
