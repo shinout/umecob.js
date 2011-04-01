@@ -1,0 +1,9 @@
+${title} 
+=====================
+
+<% 
+for (var i in arr) {
+  echo((parseInt(i)+1) + ". " + arr[i] + "\n");
+  // function "echo" outputs the first argument.
+}
+%>

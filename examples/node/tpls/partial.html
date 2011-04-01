@@ -1,0 +1,5 @@
+[% for (var i = 1; i <= 10 ; i++) { %]
+<section>
+[%{ preset: 'partial_path', use: "file", tpl_id: "child", data: echo.data, attach: {num: i} }%]
+</section>
+[%}%]

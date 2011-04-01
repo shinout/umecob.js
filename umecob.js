@@ -10,42 +10,6 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
     return Umecob.instances[id];
   }
 
-  /**
-   * function umecob(params)
-   * render string from template and data.
-   *
-   * @param params object:
-   *     tpl_id  mixed   : Identifier of template. This is parsed by binding. 
-   *                         e.g. If binding is 'file', id means path.
-   *     tpl     string  : Template. If this option is passed, tpl_id is ignored.
-   *                            
-   *     code    string  : JavaScript code compiled from template. 
-   *                         If this option is passed, tpl_id and tpl is ignored.
-   *     data_id mixed   : Identifier of data to pass to the template. This is parsed by binding.
-   *                         e.g. If binding is 'jquery', id means url.
-   *     data    object  : Data to pass to the template. If this option is passed, data_id is ignored.
-   *
-   *     attach  mixed   : After 'data' is prepared, this 'attach' is attached to the data (if typeof attach == object).
-   *                         If typeof attach is function, then returned value is merged to 'data'. 
-   *     result  string  : Rendered result. If this option is passed, umecob just returns this value
-   *                         without doing anything.
-   *     umecob function : umecob function in compiler scope. Default: this function.
-   *
-   *    ---------------------------------------------------------------------------------------
-   *     These above are modified in umecob() process.                            
-   *     These below are not modified in umecob() process.                            
-   *    ---------------------------------------------------------------------------------------
-   *     preset  string  : Preset name you registered. Default preset is 'plain'.
-   *                         You can register your own preset by calling umecob.preset(name, preset_object) 
-   *     use     mixed   : Use one-time setting. This setting is prior to 'preset' option.
-   *
-   *     sync    boolean : If true, calls this function synchronously and returns result.
-   *                        If false, returns Deferred object which passes the result to next function. Default: false
-   * @return if synchronous,    returns (string) result.
-   *         if asynchronous,   returns Deferred object ( next function can get result at first argument)
-   *         if error happened, returns error message(sync), Deferred object (next function gets error message) (async)
-   * 
-   */
   function umecob(params) {
     if (typeof params != 'object') params = {};
     params.umecob = params.umecob || umecob;
@@ -62,53 +26,10 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
   umecob.Deferred = Umecob.Deferred;
   var Deferred = umecob.Deferred;
 
-  /**
-   * function umecob.use(setting [, append=true])
-   * set 'plain' preset with given setting.
-   *
-   * @param setting mixed :
-   *    See umecob.preset
-   * @param append boolean : if true, append given setting to older one. 
-   *                         Otherwise, given setting totally replaces. Default: true
-   * @return [Function] umecob
-   *
-   */
   umecob.use = function(setting, append) {
     return umecob.preset('plain', setting, append);
   }
 
-  /**
-   * function umecob.preset(name [,setting [, append=true]])
-   * register preset of given name with given setting.
-   *
-   * @param setting mixed:
-   *   [if typeof setting == null]
-   *     return umecob.preset.get(name)
-   *     See umecob.preset.get
-   *   [if typeof setting == string]
-   *     setting string : binding name.
-   *
-   *   [if typeof setting == object]
-   *     binding  mixed       : Setting of binding. default: 'plain'.
-   *                              If string, setting is applied to both template binding and data binding.
-   *                              If object, e.g. {tpl: 'binding_name_for_template', data: 'binding_name_for_data'}
-   *     compiler string      : Setting of compiler. default: 'standard'.
-   *
-   *     start Array<string>  : Setting of start functions. default: []
-   *
-   *     end   Array<string>  : Setting of end functions. default: []
-   *     merge_start string   : If 'pre', merge the setting of start array in 'plain' before this start.
-   *                              If 'post', merge the setting of start array in 'plain' after this start.
-   *                              If '' or false, never merges. Default : false.
-   *     merge_end   string   : If 'pre', merge the setting of end array in 'plain' before this end.
-   *                              If 'post', merge the setting of end array in 'plain' after this end.
-   *                              If '' or false, never merges. Default : false.
-   * @param append boolean : If true, append given setting to older one if exists. 
-   *                         Otherwise, given setting totally replaces. Default: true
-   *
-   * @return [Function] umecob
-   *
-   */
   umecob.preset = function(name, setting, append) {
     if (setting == null) return umecob.preset.get(name);
     if (append !== false) append = true;
@@ -130,16 +51,6 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
     return umecob;
   }
 
-  /**
-   * function umecob.preset.push(type, name, fname)
-   * push 'fname' function to 'type' (start or end) array of 'name' preset
-   *
-   * @param type string : must be 'start' or 'end'
-   * @param name string : preset name
-   * @param fname string : function name to push
-   * @return [Function] umecob
-   *
-   */
   umecob.preset.push = function(type, name, fname) {
     if (typeof umecob.preset.vals[name] != 'object') return umecob;
     var arr = umecob.preset.vals[name][type] || [];
@@ -148,12 +59,6 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
     return umecob;
   }
 
-  /**
-   * function umecob.preset.get(name)
-   * get preset object specified by 'name' 
-   * @param name string
-   * @return object : preset object
-   */
   umecob.preset.get = function(name) {
     return umecob.preset.vals[name];
   }
@@ -168,71 +73,7 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
     }
   };
 
-  /**
-   *
-   * function umecob.binding(name [,value, use=true])
-   * function umecob.compiler(name [,value, use=true])
-   * function umecob.start(name [,value, use=true])
-   * function umecob.end(name [,value, use=true])
-   *
-   * (These four functions have similar format, so here writes about 'binding' in detail.)
-   * If 'value' exists, execute umecob.binding.register(name, value, use)
-   * Otherwise, execute umecob.binding.get(name)
-   *
-   *
-   * function umecob.binding.get(name)       
-   * (also available in compiler, start, end instead of 'binding')
-   * Get a registered setting identified by name
-   * @param name string
-   * @return mixed : registered value
-   *
-   *
-   * function umecob.binding.register(name, value [, use=true])  
-   * (also available in compiler, start, end instead of 'binding')
-   * Register a setting with given 'name'
-   * @param name  string
-   * @param value mixed: setting
-   *   'binding' requires the same format as the object below for this 'value'.
-   *      { getTemplate: {
-   *          sync: function(tpl_id) { // returns a template string}
-   *          async: function(tpl_id) { // returns Deferred object 
-   *                                    //(the first argument of the next function is a data object)}
-   *        },
-   *        getData: {
-   *          sync: function(data_id) { // returns a data object}
-   *          async: function(data_id) { // returns Deferred object 
-   *                                     //(the first argument of the next function is a data object)}
-   *        },
-   *      }
-   *   'compiler' requires the same format as the object below for this 'value'.
-   *      { compile : function(params) { //returns compiled code. params is the same argument as umecob(params) }
-   *        run     : function(params) { //returns result if sync, Deferred object if async. 
-   *                                     // params is the same argument as umecob(params) } }
-   *   'start'
-   *   'end'   requires the same format as the function below for this 'value'.
-   *      function(params) {
-   *        returns void. params is the same argument as umecob(params), 
-   *        You can modify these parameters in this function.
-   *        In 'end' functions, you can utilize the rendered values like params.result, params.tpl etc...
-   *        'this' keyword in the function stands for 'configuration object.' 
-   *        configuration object is as follows.
-   *        { binding_tpl:  //binding object for preparing template
-   *          binding_data: //binding object for preparing data
-   *          compiler:     //compiler object for rendering result
-   *          start:        //start functions being used by current umecob()
-   *          end:          //end functions being used by current umecob()  }
-   *      }
-   * @param use   boolean : If true, set given 'name' as 'plain' setting. Default: true
-   *                        If the target is 'start' or 'end', then added to original array.
-   * @return umecob
-   *
-   *
-   * function umecob.binding.remove(name)     (also available in compiler, start, end instead of 'binding')
-   * Delete a registered setting.
-   * @param name  string
-   * @return umecob
-   *
-   */
+
   (function(umecob) {
     umecob.binding  = Config('binding');
     umecob.compiler = Config('compiler');
@@ -336,6 +177,7 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
     function get_current_setting(params) {
       var configs = {};
       var local  = params.use || {};
+      local = (typeof local == 'string') ? {binding: local} : local;
       var preset = (typeof params.preset == 'string') ? umecob.preset.vals[params.preset] : {};
       var plain  = umecob.preset.vals.plain;
 
@@ -899,11 +741,11 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
       return trans["START"].call(this, c);
   });
 
-  // rg1 rg2 が出た状態(e.g. %])。次に改行コードが出てきたら無視
+  // rg1 rg2 が出た状態(e.g. %])。次に改行コードが出てきたらJSのコードに含める
   trans["FINISH_JS"] = function(c) {
     switch (c) {
     case '\n':
-      this.vals.linefeeds++;
+      this.codeBuffer.add('\n');
       return "START";
     default:
       return nextState.FINISH_JS.call(this, c);
@@ -1031,16 +873,18 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
   trans["JS_PRE_COMMENT"] = function(c) {
     this.buffer.add(c);
     switch (c) {
-    case '/': return 'JS_SCOMMENT';
+    //case '/': return 'JS_SCOMMENT';
     case '*': return 'JS_MCOMMENT';
     default :  return this.stack.pop();
     }
   }
+  /*
   // // が出た場合
   trans["JS_SCOMMENT"] = function(c) {
     this.buffer.add(c);
     return (c == '\n') ? this.stack.pop() : 'JS_SCOMMENT'; 
   }
+  */
   // /* が出た場合
   trans["JS_MCOMMENT"] = function(c) {
     this.buffer.add(c);

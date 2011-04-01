@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>${title} - umecob.js</title>
+</head>
+<body>
+<h1>${title}</h1>
+<p>Types of settings</p>
+<dl>
+<? for (var i in settings) { ?>
+<dt>${i}</dt>
+<dd>${settings[i]}</dd>
+<? } ?>
+</dl>
+</body>
+</html>
