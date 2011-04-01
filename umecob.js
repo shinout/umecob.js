@@ -11,7 +11,12 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
   }
 
   function umecob(params) {
-    if (typeof params != 'object') params = {};
+    if (typeof params != 'object') {
+      params = { 
+       tpl_id: arguments[0] || '', 
+       data: arguments[1] || {} , 
+       sync: (typeof arguments[2] == 'boolean') ? arguments[2]: true};
+    }
     params.umecob = params.umecob || umecob;
     return umecob[params.sync ? "sync" : "async"](params);
   }

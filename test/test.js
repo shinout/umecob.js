@@ -202,3 +202,8 @@ test('ok', result.match(/at line 1\./), 'incorect line number of error');
 test('result', 'short echo test');
 
 
+/* umecob easy input */
+var sumecob = new Umecob('sumecob');
+var result = sumecob('${hoge}, World', {hoge: "Hello"});
+test('equal', result, 'Hello, World', 'incorect line number of error');
+test('result', 'umecob easy input test');
