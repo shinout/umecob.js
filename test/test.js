@@ -158,8 +158,8 @@ test('result', 'quotation test');
 fu.end('showcode', function(params) {
   console.log(params.code);
 }, false);
-//var result = fu({use: {end: 'showcode'}, sync: true, tpl_id: "comment"});
-var result = fu({sync: true, tpl_id: "comment"});
+var result = fu({use: {end: 'showcode'}, sync: true, tpl_id: "comment"});
+//var result = fu({sync: true, tpl_id: "comment"});
 console.log(result);
 test('equal', result, "A\nB\nC", 'rendered incorectly');
 test('result', 'comment test');

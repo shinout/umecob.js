@@ -310,7 +310,7 @@ Umecob.instances = {};
 Umecob.version = '1.1.1'; 
 
 /* log */
-Umecob.log = console.log;
+Umecob.log = function(v){console.log(v)};
 
 /* static values */
 Umecob.scope = this;
