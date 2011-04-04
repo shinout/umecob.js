@@ -1,6 +1,11 @@
-umecob.js 1.1.1
+umecob.js 1.1.2
 ==========
 JavaScript Template Engine.
+
+Change Log
+----------------
+* [1.1.1]: Registered to npm
+* [1.1.2]: Modified error setting of JSHINT. Modified function 'Umecob.log()'
 
 Features
 ----------------

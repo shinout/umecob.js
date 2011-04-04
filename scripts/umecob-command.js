@@ -12,6 +12,6 @@ umecob.start('f', function(p) {
   }
 });
 
-umecob.compiler('f', umecob.Umecob.compiler('<','<','>','>'));
+umecob.compiler('scripts', umecob.Umecob.compiler('<','<','>','>'));
 var result = umecob({use: "file", tpl_id: tplfile, data_id: datafile, sync: true});
 console.log(result);

@@ -2,6 +2,12 @@ umecob.js ${Umecob.version}
 ==========
 JavaScript ${templateEngine}
 
+${changeLog}
+----------------
+<< for (var i in changeLogs) { >>
+* [${i}]: ${changeLogs[i]}
+<< } >>
+
 ${features}
 ----------------
 

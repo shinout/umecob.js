@@ -1,59 +1,62 @@
-{
-  templateEngine    : 'Template Engine.',
-  features          : 'Features',
-  available         : 'Available in both Browsers and Node.js',
-  asyncSupport      : function(jsd) {return 'Asynchronous support with ' + jsd;},
-  noDifficultSyntax : 'No difficult syntax. Just embed JavaScript in template.',
-  simpleAPI         : 'Simple API. Just pass template and data. then gets rendered result.',
-  overView          : 'Overview',
-  easyToCustomize   : 'Easy to customize',
-  installation      : 'Installation',
-  _OR               : 'OR',
-  preparation       : 'Preparation',
-  serverSide        : 'Server Side',
-  ifYouNPM          : 'if you\'ve installed via npm',
-  clientSide        : 'Client Side',
-  useSynchronously  : 'Use Synchronously',
-  useAsynchronously : 'Use Asynchronously',
-  useBinding        : 'Use Binding',
-  sampleTemplate    : 'Sample Template',
-  usePartial        : 'Use Partial Template',
-  withPartial       : 'replaced with result of this partial.',
-  customizing       : 'Customizing',
-  changeDelimiter   : 'Change Delimiters',
-  registerHook      : 'Register "start" hook, "end" hook',
-  convertedTo       : function(url){return 'converted to ' + url;},
-  advanced          : 'Advanced Use',
-  template          : 'Template',
-  'function'        : 'function',
-  replacedWith      : function(v){return 'replaced with ' + v;},
-  escape            : 'Escape',
-  notReplaced       : 'not replaced.',
-  getWholeData      : 'Gettin Whole passed data',
-  useDeferred       : 'Use Deferred object',
-  withDeferred      : 'umecob() returns deferred object. then replaced with the result.',
-  preset            : 'Preset',
-  registerPreset    : 'Register Preset',
-  usePreset         : 'Use Preset',
-  toDefaultPreset   : 'Register to a default preset',
-  bindingSet        : function(binding){return 'binding of tpl is already set to ' + binding;},
-  registerBinding   : 'Register Bindings',
-  returns           : function(v){'returns ' + v;},
-  registerHooks     : 'Register start hook as for default preset',
-  customDelimiters  : 'Register Custom Delimiters',
-  setDelimiters     : function(l,r){ return 'if you wanna set ' + l + ' and ' + r + ' as delimiter';},
-  removeSetting     : 'Remove Setting',
-  'object'          : 'object',
-  getStaticValues   : 'Get Static Values',
-  version           : 'version',
-  isNodeOrNot       : 'is Node.js or not.',
-  createNewUmecob   : function(id){return  'new umecob function with id : '+ id;},
-  argumentOptions   : 'Argument Options',
-  attachOption      : 'Modify data after fetched',
-  option            : 'option',
-  moreDetail        : 'More Detail',
-  howToWriteTpl     : 'How to write Templates',
-  howToWriteJS      : 'How to write JavaScript',
-  see               : function(v) {return 'see ' + v}
-
+{ changeLogs        :
+    { "1.1.1" :   "Registered to npm"
+    , "1.1.2" :   "Modified error setting of JSHINT. Modified function 'Umecob.log()'"
+    }
+, templateEngine    : 'Template Engine.'
+, changeLog         : 'Change Log'
+, features          : 'Features'
+, available         : 'Available in both Browsers and Node.js'
+, asyncSupport      : function(jsd) {return 'Asynchronous support with ' + jsd;}
+, noDifficultSyntax : 'No difficult syntax. Just embed JavaScript in template.'
+, simpleAPI         : 'Simple API. Just pass template and data. then gets rendered result.'
+, overView          : 'Overview'
+, easyToCustomize   : 'Easy to customize'
+, installation      : 'Installation'
+, _OR               : 'OR'
+, preparation       : 'Preparation'
+, serverSide        : 'Server Side'
+, ifYouNPM          : 'if you\'ve installed via npm'
+, clientSide        : 'Client Side'
+, useSynchronously  : 'Use Synchronously'
+, useAsynchronously : 'Use Asynchronously'
+, useBinding        : 'Use Binding'
+, sampleTemplate    : 'Sample Template'
+, usePartial        : 'Use Partial Template'
+, withPartial       : 'replaced with result of this partial.'
+, customizing       : 'Customizing'
+, changeDelimiter   : 'Change Delimiters'
+, registerHook      : 'Register "start" hook, "end" hook'
+, convertedTo       : function(url){return 'converted to ' + url;}
+, advanced          : 'Advanced Use'
+, template          : 'Template'
+, 'function'        : 'function'
+, replacedWith      : function(v){return 'replaced with ' + v;}
+, escape            : 'Escape'
+, notReplaced       : 'not replaced.'
+, getWholeData      : 'Gettin Whole passed data'
+, useDeferred       : 'Use Deferred object'
+, withDeferred      : 'umecob() returns deferred object. then replaced with the result.'
+, preset            : 'Preset'
+, registerPreset    : 'Register Preset'
+, usePreset         : 'Use Preset'
+, toDefaultPreset   : 'Register to a default preset'
+, bindingSet        : function(binding){return 'binding of tpl is already set to ' + binding;}
+, registerBinding   : 'Register Bindings'
+, returns           : function(v){'returns ' + v;}
+, registerHooks     : 'Register start hook as for default preset'
+, customDelimiters  : 'Register Custom Delimiters'
+, setDelimiters     : function(l,r){ return 'if you wanna set ' + l + ' and ' + r + ' as delimiter';}
+, removeSetting     : 'Remove Setting'
+, 'object'          : 'object'
+, getStaticValues   : 'Get Static Values'
+, version           : 'version'
+, isNodeOrNot       : 'is Node.js or not.'
+, createNewUmecob   : function(id){return  'new umecob function with id : '+ id;}
+, argumentOptions   : 'Argument Options'
+, attachOption      : 'Modify data after fetched'
+, option            : 'option'
+, moreDetail        : 'More Detail'
+, howToWriteTpl     : 'How to write Templates'
+, howToWriteJS      : 'How to write JavaScript'
+, see               : function(v) {return 'see ' + v}
 }
