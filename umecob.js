@@ -592,10 +592,10 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
         : "compiled code: >>> " + params.code.substr(76, 50).replace(/\n/g, " "));
 
       var hint = Umecob.Error.JSHINT(code4lint.join("\n"), {maxerr: 10000000, browser: true, undef: true, boss: true, evil: true, devel: true, asi: true, forin: true}, e);
-      if (!hint) {return e.message || e;}
+      if (!hint) {return e.stack || e.message || e;}
       var result = Umecob.evalScope.call(hint, echo);
       if (!result) {
-        Umecob.log(e.message || e);
+        Umecob.log(e.stack || e.message || e);
         Umecob.log("Something is wrong with "+ tplname);
         return e.message || e;
       }
@@ -1017,7 +1017,7 @@ Umecob.Error.JSHINT = function(code, option, e) {
   JSHINT = (typeof JSHINT == "function") ? JSHINT : (Umecob.node ? require("./jshint.js") : null);
   if (!JSHINT) {
     Umecob.log(Umecob.Error("JSHINT_REQUIRED"));
-    Umecob.log(e.message || e);
+    Umecob.log(e.stack || e.message || e);
     return null;
   }
   JSHINT(code, option);
@@ -1035,7 +1035,7 @@ Umecob.Error.showCode = function(arr, reason, line, e) {
   var err = reason + " at line " + line + '.';
   Umecob.log(err);
   Umecob.log(Umecob.Error.messages("SHOW_CODE")("",code4disp.join("\n")));
-  Umecob.log(e.message || e);
+  Umecob.log(e.stack || e.message || e);
   return err;
 }
 
