@@ -184,6 +184,10 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
       var local  = params.use || {};
       local = (typeof local == 'string') ? {binding: local} : local;
       var preset = (typeof params.preset == 'string') ? umecob.preset.vals[params.preset] : {};
+      if (!preset) {
+        Umecob.log('preset "'+params.preset+'" does not exist');
+        preset = {};
+      }
       var plain  = umecob.preset.vals.plain;
 
       configs.binding_tpl  = btyp(local.binding, 'tpl') || btyp(preset.binding, 'tpl') || btyp(plain.binding, 'tpl');
