@@ -550,7 +550,12 @@ Umecob.eval = function(echo, code) { return eval(code); }
 Umecob.evalScope = function(echo) {
   with(echo.data) {
     for (var i in this.errors) {
-      try{ var t = typeof eval(this.errors[i].a); } catch(e) { var t = "undefined"; }
+      try {
+        var t = typeof eval(this.errors[i].a);
+      }
+      catch(e) {
+        var t = "undefined";
+      }
       if (t  === "undefined") { return { line: this.errors[i].line, reason: this.errors[i].reason }; }
     }
   }
@@ -584,18 +589,24 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
     try {
       return Umecob.eval(echo, params.code);
     } catch (e) {
-      var codes = params.code.split("\n"),
-          code4lint = [];
-      for (var i in codes) {
-        if (! codes[i].match(/#JSHINT#/)) {
-          code4lint.push(codes[i]);
-        }
-      }
+      var code4lint = params.code.replace(/->#JH#(\n|.)*?<-#JH#/g, '').split("\n");
       var tplname = params.tpl_id || ((typeof params.tpl == "string") 
         ? "template :  >>> " + params.tpl.substr(0, 50).replace(/\n/g, " ") + "...  "
         : "compiled code: >>> " + params.code.substr(76, 50).replace(/\n/g, " "));
 
-      var hint = Umecob.Error.JSHINT(code4lint.join("\n"), {maxerr: 10000000, browser: true, undef: true, boss: true, evil: true, devel: true, asi: true, forin: true}, e);
+      var hint = Umecob.Error.JSHINT(code4lint.join("\n"), {
+        maxerr: 10000000, 
+        browser: true, 
+        undef: true, 
+        boss: true, 
+        evil: true, 
+        devel: true, 
+        asi: true, 
+        forin: true,
+        jquery: true,
+        node: true,
+        on: true,
+      }, e);
       if (!hint) {return e.stack || e.message || e;}
       var result = Umecob.evalScope.call(hint, echo);
       if (!result) {
@@ -620,7 +631,7 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
           stack      : new T(),
           codeBuffer : new T() };
 
-    state.codeBuffer.add(" with (echo.data) { // this line has to be removed when passing to #JSHINT#\n");
+    state.codeBuffer.add("/*->#JH#*/with(echo.data){/*<-#JH#*/");
 
     try {
       while (state.name && trans[state.name]) {
@@ -632,7 +643,7 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
     }
 
     state.codeBuffer.add("\necho.getResult();\n");
-    state.codeBuffer.add("} // this line has to be removed when passing to #JSHINT#");
+    state.codeBuffer.add("/*->#JH#*/}/*<-#JH#*/");
     return state.codeBuffer.join("");
   };
 
@@ -703,6 +714,14 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
       this.buffer.add(c);
       this.vals.braces++;
       return 'SHORT_ECHO';
+    case '?':
+      if (this.vals.braces != 1) {
+        this.buffer.add(c);
+        return 'SHORT_ECHO';
+      }
+      else {
+        return 'QS_SHORT_ECHO';
+      }
     case '}':
       this.vals.braces--;
       if (this.vals.braces == 0) {
@@ -712,6 +731,64 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
       } else {
         this.buffer.add(c);
         return 'SHORT_ECHO';
+      }
+    case "'":
+      this.buffer.add(c);
+      this.stack.push(this.name);
+      return "INSIDE_SQ";
+    case '"':
+      this.buffer.add(c);
+      this.stack.push(this.name);
+      return "INSIDE_DQ";
+    case '/':
+      this.buffer.add(c);
+      this.stack.push(this.name);
+      return "JS_PRE_COMMENT";
+    case '\\':
+      this.stack.push(this.name);
+      return "JS_ESCAPE";
+    case '\0':
+      throw Umecob.Error("COMPILER_STANDARD_CLOSE_TAG", '${', '}');
+      return null;
+    }
+  }
+
+  // ${hoge ? の状態
+  trans["QS_SHORT_ECHO"] = function(c) {
+    switch (c) {
+    default:
+      this.buffer.add('?'+c);
+      return 'SHORT_ECHO';
+    case ':':
+      this.mainval = this.buffer.join();
+      this.buffer.clear();
+      return 'ALTERNATE_SHORT_ECHO';
+    case '}':
+      this.codeBuffer.add('/*->#JH#*/try{echo(echo.tmp=' + ( this.buffer.join() ) + '||(function(){throw ""})());}catch(e){}/*<-#JH#*/');
+      this.buffer.clear();
+      return 'START';
+    }
+  }
+
+  // ${hoge ?: の状態
+  trans["ALTERNATE_SHORT_ECHO"] = function(c) {
+    switch (c) {
+    default:
+      this.buffer.add(c);
+      return 'ALTERNATE_SHORT_ECHO';
+    case '{':
+      this.buffer.add(c);
+      this.vals.braces++;
+      return 'ALTERNATE_SHORT_ECHO';
+    case '}':
+      this.vals.braces--;
+      if (this.vals.braces == 0) {
+        this.codeBuffer.add('/*->#JH#*/try{echo(echo.tmp='+(this.mainval)+'||(function(){throw ""})());}catch(e){try{echo('+ this.buffer.join() +');}catch(e){}}/*<-#JH#*/');
+        this.buffer.clear();
+        return 'START';
+      } else {
+        this.buffer.add(c);
+        return 'ALTERNATE_SHORT_ECHO';
       }
     case "'":
       this.buffer.add(c);
@@ -878,7 +955,7 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
     this.buffer.clear();
   });
 
-  // / が出た場合
+  // / が出た場合. 正規表現とか割り算かもしれないけど
   trans["JS_PRE_COMMENT"] = function(c) {
     this.buffer.add(c);
     switch (c) {

@@ -1,0 +1,8 @@
+${div?:'div'}#main {
+  background-color: blue
+}
+<? var sec='section';?>
+
+${sec?:'div'}.side {
+  width: ${size?:560};
+}

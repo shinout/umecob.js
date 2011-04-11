@@ -113,7 +113,8 @@ var fu = Umecob("file");
 fu.use("file")
 fu.use({compiler: 'php'})
 .start('file', function(params){
-  if (params.tpl_id) { params.tpl_id = 'test/tpls/' + params.tpl_id + '.html';
+  params.ext =  params.ext || 'html';
+  if (params.tpl_id) { params.tpl_id = 'test/tpls/' + params.tpl_id + '.' + params.ext;
   }
   if (params.data_id) {
     params.data_id = 'test/data/' + params.data_id + '.data';
@@ -178,7 +179,7 @@ test('result', 'short echo test');
 var result = fu({sync: true, tpl_id: "error01" });
 test('ok', result.match(/at line 4\./), 'incorect line number of error');
 
-var result = fu({sync: true, tpl_id: "error02" });
+var result = fu({use: {end: 'showcode'}, sync: true, tpl_id: "error02" });
 test('ok', result.match(/at line 7\./), 'incorect line number of error');
 
 fu({tpl_id: "error03" })
@@ -193,8 +194,18 @@ fu({tpl_id: "error03" })
 })
 .next(function(result) {
   test('ok', result.match(/at line 2\./), 'incorect line number of error');
+  return fu({tpl_id: "error07"});
+})
+.next(function(result) {
+  test('ok', !result.match(/at line 3\./), 'incorect line number of error');
+  return fu({tpl_id: "error08", ext: 'css'});
+})
+.next(function(result) {
+  console.log(result);
+  test('ok', result.match(/section\.side/) && result.match(/div#main/), 'incorect rendering');
   test('result', 'short echo async test');
 });
+
 
 
 var result = fu({sync: true, tpl_id: "error04" });
