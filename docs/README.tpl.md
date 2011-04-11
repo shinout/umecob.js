@@ -81,6 +81,11 @@ ${overView}
     [% var username = "shinout"; %] 
     Hello, [%=username%]! // Hello, shinout!
 
+#### ${shortTag} ####
+    Hello, \${username} // Hello, shinout!
+    twitter: \${twitter?} // if var 'twitter' is undefined or empty, then replaced with ''
+    github: \${github.Account()?:'no account'} // if var 'github.getAccount()' is undefined or empty, then replaced with 'no account'
+
 #### ${usePartial}####
     [% {tpl: "sample.tpl", data_id:"/data.json" } %]  // ${withPartial}
 

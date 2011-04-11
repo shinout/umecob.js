@@ -1,6 +1,7 @@
 { changeLogs        :
     { "1.1.1" :   "Registered to npm"
     , "1.1.2" :   "Modified error setting of JSHINT. Modified function 'Umecob.log()'"
+    , "1.1.3" :   "${val?:default_val} : set default value and suppress error"
     }
 , templateEngine    : 'Template Engine.'
 , changeLog         : 'Change Log'
@@ -21,6 +22,7 @@
 , useAsynchronously : 'Use Asynchronously'
 , useBinding        : 'Use Binding'
 , sampleTemplate    : 'Sample Template'
+, shortTag          : 'show variable with ${}'
 , usePartial        : 'Use Partial Template'
 , withPartial       : 'replaced with result of this partial.'
 , customizing       : 'Customizing'

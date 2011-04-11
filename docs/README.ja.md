@@ -1,4 +1,4 @@
-umecob.js 1.1.2
+umecob.js 1.1.3
 ==========
 JavaScript テンプレートエンジン
 
@@ -6,6 +6,7 @@ JavaScript テンプレートエンジン
 ----------------
 * [1.1.1]: npmに対応
 * [1.1.2]: JSHINTのエラー出力を修正、Umecob.log関数の修正。
+* [1.1.3]: ${val?:default_val}でデフォルト値設定、エラー抑制機能を追加。
 
 特徴
 ----------------
@@ -79,6 +80,11 @@ JavaScript テンプレートエンジン
 ### テンプレートのサンプル###
     [% var username = "shinout"; %] 
     Hello, [%=username%]! // Hello, shinout!
+
+#### 変数を${}で表示 ####
+    Hello, ${username} // Hello, shinout!
+    twitter: ${twitter?} // if var 'twitter' is undefined or empty, then replaced with ''
+    github: ${github.Account()?:'no account'} // if var 'github.getAccount()' is undefined or empty, then replaced with 'no account'
 
 #### パーシャル(サブテンプレート)を利用####
     [% {tpl: "sample.tpl", data_id:"/data.json" } %]  // パーシャルの内容に置換されます

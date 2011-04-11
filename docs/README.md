@@ -1,4 +1,4 @@
-umecob.js 1.1.2
+umecob.js 1.1.3
 ==========
 JavaScript Template Engine.
 
@@ -6,6 +6,7 @@ Change Log
 ----------------
 * [1.1.1]: Registered to npm
 * [1.1.2]: Modified error setting of JSHINT. Modified function 'Umecob.log()'
+* [1.1.3]: ${val?:default_val} : set default value and suppress error
 
 Features
 ----------------
@@ -79,6 +80,11 @@ Overview
 ### Sample Template###
     [% var username = "shinout"; %] 
     Hello, [%=username%]! // Hello, shinout!
+
+#### show variable with ${} ####
+    Hello, ${username} // Hello, shinout!
+    twitter: ${twitter?} // if var 'twitter' is undefined or empty, then replaced with ''
+    github: ${github.Account()?:'no account'} // if var 'github.getAccount()' is undefined or empty, then replaced with 'no account'
 
 #### Use Partial Template####
     [% {tpl: "sample.tpl", data_id:"/data.json" } %]  // replaced with result of this partial.
