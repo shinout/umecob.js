@@ -17,7 +17,6 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
        data: arguments[1] || {} , 
        sync: (typeof arguments[2] == 'boolean') ? arguments[2]: true};
     }
-    params.umecob = params.umecob || umecob;
     return umecob[params.sync ? "sync" : "async"](params);
   }
 
@@ -200,6 +199,7 @@ function Umecob(id) { // this function is meaningless. Just for making a scope.
 
     /* prepare current setting and execute start functions */
     function common_start(params) {
+      params.umecob = params.umecob || umecob;
       var configs = get_current_setting(params);
       /* execute start functions */
       for (var i in configs.start) {

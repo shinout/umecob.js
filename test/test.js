@@ -227,3 +227,15 @@ console.log(result);
 test('equal', result, 'here -> async call', 'async partial in sync template failed');
 test('result', 'async in sync');
 
+
+/* deep partial sync */
+var result = fu({tpl_id: 'depth01', sync: true});
+test('equal', result, 'depth01depth02depth03depth04', 'deep partial failed');
+test('result', 'deep partial test');
+
+/* deep partial async */
+var result = fu({tpl_id: 'depth01'})
+.next(function(result) {
+  test('equal', result, 'depth01depth02depth03depth04', 'deep partial async failed');
+  test('result', 'deep partial async test');
+});
