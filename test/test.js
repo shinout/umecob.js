@@ -218,3 +218,12 @@ var sumecob = new Umecob('sumecob');
 var result = sumecob('${hoge}, World', {hoge: "Hello"});
 test('equal', result, 'Hello, World', 'incorect line number of error');
 test('result', 'umecob easy input test');
+
+
+
+/* umecob async partial in sync template  */
+var result = sumecob('here -> [%{tpl: "async call", sync: false}%]');
+console.log(result);
+test('equal', result, 'here -> async call', 'async partial in sync template failed');
+test('result', 'async in sync');
+
