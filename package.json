@@ -1,6 +1,6 @@
 {
   "name": "umecob"
-, "version": "1.1.3"
+, "version": "1.1.4"
 , "description": "JS template engine available in both Browsers and Node.js supporting asynchronous methods with JSDeferred."
 , "tags": ["template-engine", "node", "clientside", "ejs"]
 , "author": "SHIN Suzuki <shinout310@gmail.com>"

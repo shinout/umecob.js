@@ -1,7 +1,7 @@
 /**
  * umecob.js
  * @author SHIN Suzuki
- * @version 1.1.3
+ * @version 1.1.4
  */
 
 function Umecob(id) { // this function is meaningless. Just for making a scope.
@@ -311,7 +311,7 @@ Umecob.instances = {};
  *********************/
 
 /* version */
-Umecob.version = '1.1.3'; 
+Umecob.version = '1.1.4'; 
 
 /* log */
 Umecob.log = function(v){console.log(v)};
@@ -944,7 +944,7 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
   // lf1 lf2 { (e.g. [%{ )
   trans["JS_INCLUDE"] = jsStartTemplate("JS_INCLUDE", "JS_INCLUDE_PRE_END");
   trans["JS_INCLUDE_PRE_END"] = jsPreEndTemplate("JS_INCLUDE", function() {
-    this.codeBuffer.add('echo.addUmecob(echo.umecob(' + ( this.buffer.join() ) + '));');
+    this.codeBuffer.add('echo.addUmecob(echo.umecob[echo.sync?"sync":"async"](' + ( this.buffer.join() ) + '));');
     this.buffer.clear();
   });
 
