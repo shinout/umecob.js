@@ -1,4 +1,4 @@
-umecob.js 1.1.4
+umecob.js 1.1.5
 ==========
 JavaScript Template Engine.
 
@@ -8,6 +8,7 @@ Change Log
 * [1.1.2]: Modified error setting of JSHINT. Modified function 'Umecob.log()'
 * [1.1.3]: ${val?:default_val} : set default value and suppress error
 * [1.1.4]: asynchronous partial call in sync template will be parsed as synchronous call
+* [1.1.5]: fixed a bug of deep partial call
 
 Features
 ----------------

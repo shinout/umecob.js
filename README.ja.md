@@ -1,4 +1,4 @@
-umecob.js 1.1.4
+umecob.js 1.1.5
 ==========
 JavaScript テンプレートエンジン
 
@@ -8,6 +8,7 @@ JavaScript テンプレートエンジン
 * [1.1.2]: JSHINTのエラー出力を修正、Umecob.log関数の修正。
 * [1.1.3]: ${val?:default_val}でデフォルト値設定、エラー抑制機能を追加。
 * [1.1.4]: syncなtemplateの中のasyncなcallはsyncとして解釈するようにした
+* [1.1.5]: 3階層のpartial読み込みでエラーが出る問題を修正
 
 特徴
 ----------------
