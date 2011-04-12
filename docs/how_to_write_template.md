@@ -63,6 +63,30 @@ How to write template?
     [% echo(price + " yen? It's too expensive!"); %] // 35000 yen? It's too expensive!
 
 
+###2.4 use ${hoge?}
+    ${hoge?} shows the contents of hoge if it is not empty.
+    if it doesn't exist, then show nothing (without throwing errors even if hoge is undefined.)
+
+    <option value="someval" ${selected?}>somename</option>
+
+###2.5 use ${hoge?:default_value}
+    ${hoge?:default_value} shows the contents of hoge if it is not empty.
+    if it doesn't exist, then show default_value.
+
+    body {
+      width: ${width?:950}px;
+    }
+
+    if default_value doesn't exist, then shows nothing.
+
+    NOTICE: if hoge === 0, it is regarded as empty. Be careful of this fact.
+
+    [% var marginLeft = 0; %]
+
+    div.hoge {
+      margin-left: ${marginLeft?:10}px; // this will be 10px. Sorry to say that this is a current specification.
+    }
+
 
 ##3. use passed variables.
 ###3.1 see sample
