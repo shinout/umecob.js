@@ -605,7 +605,7 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
         forin: true,
         jquery: true,
         node: true,
-        on: true,
+        on: true
       }, e);
       if (!hint) {return e.stack || e.message || e;}
       var result = Umecob.evalScope.call(hint, echo);
@@ -622,7 +622,7 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
 
   C.compile = function(params) {
     var tpl = params.tpl;
-    var tplArr = (typeof tpl === "string")  ? tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '').replace(/\n$/, '') + '\0'.split("") : '\0',
+    var tplArr = (typeof tpl === "string")  ? (tpl.replace(/\r(\n)?/g, '\n').replace(/\0/g, '').replace(/\n$/, '') + '\0').split("") : '\0',
         i      = 0,
         state  = {
           name       : "START", 
