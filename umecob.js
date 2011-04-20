@@ -1,7 +1,7 @@
 /**
  * umecob.js
  * @author SHIN Suzuki
- * @version 1.1.5
+ * @version 1.1.6
  */
 
 function Umecob(id) { // this function is meaningless. Just for making a scope.
@@ -311,7 +311,7 @@ Umecob.instances = {};
  *********************/
 
 /* version */
-Umecob.version = '1.1.5'; 
+Umecob.version = '1.1.6'; 
 
 /* log */
 Umecob.log = function(v){console.log(v)};
