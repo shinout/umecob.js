@@ -338,7 +338,7 @@ Umecob.binding = function(impl) {
       str = "("+str+")";
       return eval(str);
     } catch (e) {
-      var hint = Umecob.Error.JSHINT(str, {}, e);
+      var hint = Umecob.Error.JSHINT('var a='+str, e);
       if (!hint || !hint.errors) { return {};}
       Umecob.Error.showCode(str.split("\n"), hint.errors[0].reason, hint.errors[0].line, e);
       return {};
@@ -594,19 +594,7 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
         ? "template :  >>> " + params.tpl.substr(0, 50).replace(/\n/g, " ") + "...  "
         : "compiled code: >>> " + params.code.substr(76, 50).replace(/\n/g, " "));
 
-      var hint = Umecob.Error.JSHINT(code4lint.join("\n"), {
-        maxerr: 10000000, 
-        browser: true, 
-        undef: true, 
-        boss: true, 
-        evil: true, 
-        devel: true, 
-        asi: true, 
-        forin: true,
-        jquery: true,
-        node: true,
-        on: true
-      }, e);
+      var hint = Umecob.Error.JSHINT(code4lint.join("\n"), e);
       if (!hint) {return e.stack || e.message || e;}
       var result = Umecob.evalScope.call(hint, echo);
       if (!result) {
@@ -1094,7 +1082,21 @@ Umecob.Error.messages = function() {
 
 
 /* hint: show error in detail using JSHINT */
-Umecob.Error.JSHINT = function(code, option, e) {
+Umecob.Error.JSHINT = function(code, e) {
+  var option = {
+    maxerr   : 10000000,
+    browser  : true,
+    undef    : true,
+    boss     : true,
+    evil     : true,
+    devel    : true,
+    asi      : true,
+    forin    : true,
+    jquery   : true,
+    node     : true,
+    on       : true,
+    laxbreak : true
+  }
   JSHINT = (typeof JSHINT == "function") ? JSHINT : (Umecob.node ? require("./jshint.js") : null);
   if (!JSHINT) {
     Umecob.log(Umecob.Error("JSHINT_REQUIRED"));
