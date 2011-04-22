@@ -1,4 +1,4 @@
-umecob.js 1.1.7
+umecob.js 1.1.8
 ==========
 JavaScript Template Engine.
 
@@ -11,6 +11,7 @@ Change Log
 * [1.1.5]: fixed a bug of deep partial call
 * [1.1.6]: IE8 basic compatibility
 * [1.1.7]: ignore JSHINT error happenning in jsonlike expression
+* [1.1.8]: fixed ${val?'hoge':'fuga'} problem
 
 Features
 ----------------
