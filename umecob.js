@@ -745,8 +745,9 @@ Umecob.compiler = function(lf1, lf2,   rg1, rg2, nextState) {
   trans["QS_SHORT_ECHO"] = function(c) {
     switch (c) {
     default:
-      this.buffer.add('?'+c);
-      return 'SHORT_ECHO';
+      this.buffer.add('?');
+      this.name = "SHORT_ECHO";
+      return trans["SHORT_ECHO"].call(this, c);
     case ':':
       this.mainval = this.buffer.join();
       this.buffer.clear();

@@ -217,6 +217,16 @@ test('result', 'short echo test');
 var sumecob = new Umecob('sumecob');
 var result = sumecob('${hoge}, World', {hoge: "Hello"});
 test('equal', result, 'Hello, World', 'incorect line number of error');
+
+var result = sumecob('${hoge?}, World', {fuga: "Hello"});
+test('equal', result, ', World', 'easy input with ? ');
+
+var result = sumecob('${hoge?:"GoodBye"}, World', {fuga: "Hello"});
+test('equal', result, 'GoodBye, World', 'easy input with ? ');
+
+
+
+
 test('result', 'umecob easy input test');
 
 
