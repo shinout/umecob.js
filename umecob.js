@@ -1135,8 +1135,7 @@ Umecob.Error.messages("UMECOB_SET_NAME", function() {
   "  e.g.  umecob({preset: 'debug'}); ";
 });
 Umecob.Error.messages("DEFERRED_NOTFOUND", 
-  "If you use umecob() asynchronously, you have to include \"JSDeferred\" library."+
-  ' e.g. <script type="text/javascript" src="/path/to/umecob/jsdeferred.js"></script>');
+  "If you use umecob() asynchronously, you have to include \"JSDeferred\" library.");
 Umecob.Error.messages("BINDING_NO_IMPL", "You must implement getSync(id) and getAsync(id) when extending Umecob.binding. ");
 
 Umecob.Error.messages("SHOW_CODE", function(){ 
@@ -1149,8 +1148,7 @@ Umecob.Error.messages("COMPILER_STANDARD_UNKNOWN_STATE", function(){ return "Sta
 Umecob.Error.messages("COMPILER_STANDARD_QUOTATION", function(){ return "Syntax error: you have to close quotation [" + arguments[1] +"']."});
 Umecob.Error.messages("COMPILER_STANDARD_CLOSE_TAG", function(name, ldel, rdel){ return "Syntax error: you have to close '"+ldel+"' tag with '"+rdel+"' tag."});
 Umecob.Error.messages("JSHINT_REQUIRED", 
-  "Error occurred during eval(). If you want to see details of the error, please request " +
-  'JSHINT.  e.g. <script type="text/javascript" src="/path/to/umecob/jshint.js"></script>');
+  "Error occurred during eval(). If you want to see details of the error, please request JSHINT. ");
 
 /*********************
  *** EXPORT UMECOB ***
